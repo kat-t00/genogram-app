@@ -1,0 +1,1078 @@
+/* ポップで視認性の良いデザイン（丸ゴシック・寒色系パステル・角丸・ふんわり影） */
+
+:root {
+  --color-bg: #f1f7fb;
+  --color-header-start: #6ec6ff;
+  --color-header-end: #a18cd1;
+  --color-primary: #4d8fff;
+  --color-primary-dark: #2f6fdb;
+  --color-secondary: #4ecdc4;
+  --color-secondary-dark: #3bb3aa;
+  --color-card: #ffffff;
+  --color-border: #d3e3f0;
+  --color-text: #2f3b52;
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Hiragino Maru Gothic ProN", "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-header {
+  background: linear-gradient(135deg, var(--color-header-start), var(--color-header-end));
+  padding: 8px 16px;
+  box-shadow: var(--shadow-soft);
+  flex: 0 0 auto;
+}
+
+.app-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 16px;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tool-button {
+  border: none;
+  border-radius: 999px;
+  padding: 5px 11px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-primary-dark);
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tool-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+
+.tool-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: var(--shadow-soft);
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.export-option input {
+  width: auto;
+  margin: 0;
+}
+
+.app-body {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+}
+
+.side-panel {
+  width: 330px;
+  flex: 0 0 auto;
+  background: var(--color-card);
+  border-right: 2px solid var(--color-border);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+body.side-panel-collapsed .side-panel {
+  display: none;
+}
+
+body.note-panel-collapsed .note-panel {
+  display: none;
+}
+
+/* サイドパネル（入力フォーム）・備考欄の開閉ボタンを1ヶ所にまとめた小さな浮き島。
+   左右いっぱいの帯にすると占有面積が大きいため、キャンバス左下に小さくまとめている。 */
+.panel-toggle-cluster {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.panel-toggle-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-text);
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+}
+
+.panel-toggle-switch:hover {
+  background: #ffffff;
+}
+
+.switch-track {
+  position: relative;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 16px;
+  border-radius: 999px;
+  background: #c9d4e0;
+  transition: background 0.15s ease;
+}
+
+.switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.panel-toggle-switch.is-open .switch-track {
+  background: var(--color-primary);
+}
+
+.panel-toggle-switch.is-open .switch-knob {
+  transform: translateX(14px);
+}
+
+/* 今のズーム倍率（％）の表示と、＋／－で段階的に拡大縮小できるボタン。
+   ピンチ・ホイールだけだと今どれくらい拡大しているか分かりにくく、
+   トラックパッドの操作が不安定な端末でも確実に拡大縮小できるようにする。 */
+.zoom-control {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 999px;
+  box-shadow: var(--shadow-soft);
+  padding: 3px;
+}
+
+.zoom-btn,
+.zoom-percent {
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 999px;
+}
+
+.zoom-btn {
+  width: 26px;
+  height: 26px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.zoom-btn:hover,
+.zoom-percent:hover {
+  background: var(--color-bg);
+}
+
+.zoom-percent {
+  padding: 5px 10px;
+  font-size: 12px;
+  min-width: 48px;
+}
+
+/* 画面の狭い端末（小さめのノートPC・タブレットの横向きなど）では、
+   サイドパネルの幅を少し縮めてキャンバス側の表示スペースを確保する。 */
+@media (max-width: 1100px) {
+  .side-panel {
+    width: 270px;
+  }
+}
+
+/* さらに狭い・縦長の端末（タブレットの縦向き・スマホなど）では、
+   左右に並べるレイアウトそのものが窮屈になるため、サイドパネルを
+   キャンバスの上に重ねず「上下に積む」配置に切り替える。
+   サイドパネルは画面の半分までの高さに収め、それ以上はスクロールで見る。 */
+@media (max-width: 820px) {
+  .app-body {
+    flex-direction: column;
+  }
+  .side-panel {
+    width: 100%;
+    max-height: 48vh;
+    border-right: none;
+    border-bottom: 2px solid var(--color-border);
+  }
+  .canvas-wrap {
+    min-height: 280px;
+  }
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.tab-button {
+  flex: 1;
+  border: none;
+  border-radius: 14px 14px 0 0;
+  padding: 10px 4px;
+  background: #e4edf7;
+  color: var(--color-text);
+  font-weight: bold;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tab-button.active {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.tab-panel.hidden {
+  display: none;
+}
+
+#family-form label,
+#institution-form label,
+#connect-form label,
+#institution-connect-form label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--color-text);
+}
+
+.field-hint {
+  font-size: 11px;
+  font-weight: normal;
+  color: #8a93a6;
+  margin-left: 4px;
+}
+
+#family-form input,
+#family-form select,
+#family-form textarea,
+#institution-form input,
+#institution-form select,
+#institution-form textarea,
+#connect-form select,
+#institution-connect-form select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #f8fbfe;
+  resize: vertical;
+}
+
+.combo-box {
+  position: relative;
+}
+
+.combo-box input {
+  width: 100%;
+  padding-right: 34px !important;
+}
+
+.combo-toggle {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  bottom: 4px;
+  width: 28px;
+  border: none;
+  background: transparent;
+  color: var(--color-primary-dark);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.combo-toggle:hover {
+  background: #e1ecfa;
+}
+
+.combo-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin: 4px 0 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--color-card);
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 20;
+}
+
+.combo-list.hidden {
+  display: none;
+}
+
+.combo-list li {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: normal;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.combo-list li:hover {
+  background: #e1ecfa;
+  color: var(--color-primary-dark);
+}
+
+.checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-label input {
+  width: auto !important;
+  margin: 0 !important;
+}
+
+.checkbox-list {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+  background: #ffffff;
+}
+
+.checkbox-list .checkbox-label {
+  padding: 3px 0;
+}
+
+.primary-button {
+  width: 100%;
+  border: none;
+  border-radius: 999px;
+  padding: 12px;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.15s ease;
+}
+
+.primary-button.secondary {
+  background: var(--color-secondary);
+}
+
+.primary-button:hover {
+  transform: translateY(-2px);
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.secondary-button,
+.danger-button {
+  width: 100%;
+  border: none;
+  border-radius: 999px;
+  padding: 10px;
+  font-weight: bold;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.15s ease;
+}
+
+.secondary-button {
+  background: #e4edf7;
+  color: var(--color-text);
+}
+
+.danger-button {
+  background: #ffe3e0;
+  color: #c0392b;
+}
+
+.secondary-button:hover,
+.danger-button:hover {
+  transform: translateY(-2px);
+}
+
+.hidden {
+  display: none !important;
+}
+
+.hint-text {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #6b7c93;
+  line-height: 1.5;
+}
+
+.list-heading {
+  margin: 18px 0 8px;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.entity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.entity-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  background: #f8fbfe;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+
+.entity-list li:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-secondary);
+}
+
+.entity-list li.editing {
+  border-color: var(--color-primary);
+  background: #eaf1fb;
+}
+
+.entity-list .entity-sub {
+  color: #6b7c93;
+  font-weight: normal;
+}
+
+.entity-list li.connection-row {
+  cursor: default;
+}
+
+.entity-list .entity-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entity-delete {
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  color: #c0392b;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 2px 6px;
+}
+
+.entity-delete:hover {
+  background: #ffe3e0;
+}
+
+.case-open-button {
+  flex: 0 0 auto;
+  width: auto !important;
+  padding: 6px 14px !important;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 45, 70, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal-box {
+  background: var(--color-card);
+  border-radius: 18px;
+  padding: 24px;
+  width: 480px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.modal-box h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: var(--color-text);
+}
+
+.modal-box .entity-list {
+  margin-bottom: 16px;
+}
+
+.modal-box .secondary-button {
+  width: 100%;
+}
+
+.modal-box label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--color-text);
+}
+
+.modal-box input,
+.modal-box select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #f8fbfe;
+}
+
+.help-modal-box {
+  width: 560px;
+  max-width: 90vw;
+}
+
+.help-modal-box h3 {
+  margin: 18px 0 6px;
+  font-size: 14px;
+  color: var(--color-primary-dark);
+}
+
+.help-modal-box p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--color-text);
+}
+
+.help-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--color-text);
+}
+
+.help-modal-box #help-modal-close {
+  margin-top: 20px;
+}
+
+#export-options-modal .checkbox-label {
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+#export-options-modal .form-actions {
+  margin-top: 8px;
+}
+
+.canvas-wrap {
+  flex: 1 1 auto;
+  position: relative;
+  background:
+    radial-gradient(circle at 20px 20px, #dde8f2 2px, transparent 2px);
+  background-size: 28px 28px;
+  background-color: #f5f9fd;
+  overflow: hidden;
+}
+
+#canvas {
+  display: block;
+  cursor: grab;
+  touch-action: none;
+}
+
+/* 左の操作ボタン群と右の表示切替ボタン群を、固定位置(position:absolute)同士の
+   重なりではなく、1つのflexコンテナの中で「space-between」配置にする。
+   画面が狭くてどちらも1行に収まらない時は、flex-wrapにより右側のボタン群が
+   自動的に2段目に折り返るので、重なって操作できなくなることがない。 */
+.canvas-overlay-toolbars {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  z-index: 10;
+  pointer-events: none; /* すき間部分はキャンバスのドラッグを邪魔しないようにする */
+}
+
+.canvas-toolbar,
+.view-mode-toolbar {
+  pointer-events: auto;
+  flex-wrap: wrap;
+}
+
+.canvas-toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+.canvas-toolbar .add-button {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.view-mode-toolbar {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  padding: 4px;
+  box-shadow: var(--shadow-soft);
+}
+
+.view-mode-button {
+  border: none;
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: transparent;
+  color: var(--color-text);
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.view-mode-button.active {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+/* 表示モード：データは変えず、対象の図形・線をCSSで隠すだけ */
+#canvas.view-mode-genogram .institution-node,
+#canvas.view-mode-genogram .institution-link-line,
+#canvas.view-mode-genogram .ecomap-group-boundary,
+#canvas.view-mode-genogram .ecomap-group-label,
+#canvas.view-mode-genogram .group-handles {
+  display: none;
+}
+
+#canvas.view-mode-ecomap .relationship-line,
+#canvas.view-mode-ecomap .family-tree-connector,
+#canvas.view-mode-ecomap .cohabiting-boundary,
+#canvas.view-mode-ecomap .cohabiting-boundary-hit,
+#canvas.view-mode-ecomap .cohabiting-handles {
+  display: none;
+}
+
+/* 同居枠・グループ枠の輪郭を変形する操作用の丸。控えめに表示し、
+   つまんでいる時・ホバー時に少し大きく見せて操作対象だと分かりやすくする。 */
+.boundary-shape-handle {
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+
+.boundary-shape-handle:hover {
+  opacity: 1;
+  cursor: grab;
+}
+
+.note-panel {
+  flex: 0 0 auto;
+  background: var(--color-card);
+  border-top: 2px solid var(--color-border);
+  padding: 10px 20px;
+}
+
+.note-panel label {
+  display: block;
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+#note-textarea {
+  width: 100%;
+  height: 70px;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.app-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: bold;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 5px 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.app-credit:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.app-credit svg {
+  fill: currentColor;
+}
+
+.context-menu {
+  position: fixed;
+  background: var(--color-card);
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  padding: 6px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.context-menu.hidden {
+  display: none;
+}
+
+.floating-popup {
+  position: fixed;
+  background: var(--color-card);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  padding: 14px;
+  width: 260px;
+  max-height: 85vh;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.floating-popup.hidden {
+  display: none;
+}
+
+.popup-close-x {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.popup-close-x:hover {
+  background: #eaf1fb;
+}
+
+.floating-popup label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--color-text);
+}
+
+.floating-popup input,
+.floating-popup select,
+.floating-popup textarea {
+  display: block;
+  width: 100%;
+  margin-top: 3px;
+  padding: 6px 8px;
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #f8fbfe;
+  resize: vertical;
+}
+
+.floating-popup .form-actions {
+  margin-top: 4px;
+}
+
+.popup-section-heading {
+  margin: 14px 0 8px;
+  padding-top: 10px;
+  border-top: 2px solid var(--color-border);
+  font-size: 12px;
+  color: var(--color-primary-dark);
+}
+
+.floating-popup .hint-text {
+  font-size: 11px;
+  margin: -4px 0 10px;
+}
+
+.floating-popup .primary-button,
+.floating-popup .secondary-button,
+.floating-popup .danger-button {
+  padding: 8px;
+  font-size: 12px;
+}
+
+.context-menu button {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.context-menu button:hover {
+  background: #e1ecfa;
+  color: var(--color-primary-dark);
+}
+
+.context-menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid var(--color-border);
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+#line-context-delete {
+  margin-top: 4px;
+  border-top: 1px solid var(--color-border);
+  color: #c0392b;
+}
+
+#print-area {
+  display: none;
+}
+
+@media print {
+  body > *:not(#print-area) {
+    display: none !important;
+  }
+  /* 縦に並ぶ見出し・図・備考の高さを「ページの印刷可能な高さ」の中で
+     flexで分け合うことで、図が縦長でも備考が長くても2ページ目に
+     溢れないようにする（図の高さはsvg-wrapのflex:1で決まる残り分）。 */
+  #print-area {
+    display: flex !important;
+    flex-direction: column;
+    font-family: -apple-system, "Hiragino Maru Gothic ProN", "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+  }
+  #print-area h2 {
+    flex: 0 0 auto;
+    margin: 0 0 8px;
+    font-size: 16px;
+    color: #2f3b52;
+  }
+  #print-area .print-meta {
+    flex: 0 0 auto;
+    margin: 0 0 8px;
+    font-size: 11px;
+    color: #6b7c93;
+  }
+  /* 本文エリア：縦向きは図の下に凡例・備考を縦に並べ、横向きは図の右に並べる。
+     向きの切り替えはexport.jsが#print-areaに付けるorientation-landscape/-portraitで行う。 */
+  #print-area .print-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  #print-area.orientation-landscape .print-body {
+    flex-direction: row;
+    gap: 14px;
+  }
+  #print-area .print-diagram-col {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+  }
+  #print-area .print-text-col {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  #print-area.orientation-landscape .print-text-col {
+    flex: 0 0 78mm;
+    min-height: 0;
+    overflow: hidden;
+    border-left: 1px solid #d3e3f0;
+    padding-left: 12px;
+  }
+  #print-area .print-legend {
+    flex: 0 0 auto;
+  }
+  #print-area.orientation-portrait .print-legend {
+    padding-top: 8px;
+    border-top: 1px solid #d3e3f0;
+  }
+  #print-area .print-legend h3 {
+    margin: 0 0 4px;
+    font-size: 12px;
+    color: #2f6fdb;
+  }
+  #print-area .print-legend ul {
+    margin: 0;
+    padding-left: 16px;
+    font-size: 10px;
+    line-height: 1.5;
+    color: #4a5a72;
+  }
+  #print-area .print-svg-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+  }
+  #print-area svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  #print-area .print-note {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    page-break-inside: avoid;
+  }
+  #print-area.orientation-portrait .print-note {
+    flex: 0 0 auto;
+    padding-top: 10px;
+    border-top: 2px solid #d3e3f0;
+  }
+  #print-area .print-note h3 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: #2f6fdb;
+  }
+  #print-area .print-note p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #2f3b52;
+  }
+}
+
+.save-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  background: #2f3b52;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: bold;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  z-index: 2000;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+
+.save-toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.save-toast.hidden {
+  display: none;
+}

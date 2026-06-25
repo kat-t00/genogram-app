@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ジェノグラム・エコマップ作成アプリ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header-top">
+    <h1>🌱 ジェノグラム・エコマップ作成</h1>
+    <a class="app-credit" href="https://x.com/kat_t0o" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M18.9 2H22l-7.6 8.7L23 22h-6.6l-5.2-6.8L5 22H1.9l8.1-9.3L1 2h6.7l4.7 6.2L18.9 2zM16.6 20h1.9L7.5 4H5.5L16.6 20z"/></svg>
+      作成：ケアマネカトゥ（@kat_t0o）
+    </a>
+  </div>
+  <nav class="toolbar">
+    <button id="btn-new" class="tool-button">✨ はじめから作成</button>
+    <button id="btn-case-list" class="tool-button">📁 保存データ一覧</button>
+    <button id="btn-open" class="tool-button">📂 手動でデータを開く</button>
+    <button id="btn-save-file" class="tool-button">💾 データ取り出し</button>
+    <button id="btn-export-png" class="tool-button">🖼 画像出力</button>
+    <button id="btn-export-pdf" class="tool-button">📄 PDF出力</button>
+    <button id="btn-help" class="tool-button help-button">❓ ジェノグラム・エコマップとは？</button>
+    <button id="btn-usage-guide" class="tool-button help-button">📘 使い方ガイド</button>
+    <input type="file" id="file-input" accept=".json" hidden>
+  </nav>
+</header>
+
+<main class="app-body">
+  <aside class="side-panel" id="side-panel">
+    <div class="tabs">
+      <button class="tab-button active" data-tab="family">👪 家族</button>
+      <button class="tab-button" data-tab="institution">🏥 関係機関</button>
+      <button class="tab-button" data-tab="group">👥 グループ</button>
+    </div>
+
+    <section class="tab-panel" id="tab-family">
+      <form id="family-form">
+        <input type="hidden" id="family-editing-id" value="">
+        <label>名前
+          <input type="text" id="family-name" required>
+        </label>
+        <label>年齢
+          <div class="combo-box">
+            <input type="text" inputmode="numeric" id="family-age" autocomplete="off">
+            <button type="button" class="combo-toggle">▾</button>
+            <ul class="combo-list hidden">
+              <li>0</li><li>3</li><li>6</li><li>10</li><li>15</li><li>18</li>
+              <li>20</li><li>30</li><li>40</li><li>50</li><li>60</li><li>65</li>
+              <li>70</li><li>75</li><li>80</li><li>85</li><li>90</li><li>100</li>
+            </ul>
+          </div>
+        </label>
+        <label>性別
+          <div class="combo-box">
+            <input type="text" id="family-gender" value="不明" autocomplete="off">
+            <button type="button" class="combo-toggle">▾</button>
+            <ul class="combo-list hidden">
+              <li>男性</li>
+              <li>女性</li>
+              <li>不明</li>
+            </ul>
+          </div>
+        </label>
+        <label>基準にする人<span class="field-hint">（孫・子の配偶者などを追加する時に変更）</span>
+          <select id="family-anchor"></select>
+        </label>
+        <label>続柄<span class="field-hint">（「基準にする人」から見た続柄）</span>
+          <div class="combo-box">
+            <input type="text" id="family-relation" value="子" autocomplete="off">
+            <button type="button" class="combo-toggle">▾</button>
+            <ul class="combo-list hidden">
+              <li>本人</li>
+              <li>父</li>
+              <li>母</li>
+              <li>配偶者</li>
+              <li>子</li>
+              <li>兄</li>
+              <li>姉</li>
+              <li>弟</li>
+              <li>妹</li>
+              <li>孫</li>
+              <li>祖父</li>
+              <li>祖母</li>
+              <li>曽祖父</li>
+              <li>曽祖母</li>
+              <li>義父</li>
+              <li>義母</li>
+              <li>おじ</li>
+              <li>おば</li>
+              <li>いとこ</li>
+              <li>甥</li>
+              <li>姪</li>
+              <li>友人</li>
+              <li>近隣住人</li>
+              <li>その他</li>
+            </ul>
+          </div>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="family-cohabiting"> 同居している
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="family-deceased"> 故人（死亡）
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="family-key-person"> ★ キーパーソン（主たる介護者・連絡先）
+        </label>
+        <label>備考
+          <textarea id="family-note" rows="2" placeholder="気になる点などメモ"></textarea>
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="primary-button" id="family-submit-button">＋ 家族を追加</button>
+          <button type="button" id="family-cancel-edit" class="secondary-button hidden">編集をやめる</button>
+          <button type="button" id="family-delete-button" class="danger-button hidden">🗑 削除</button>
+        </div>
+      </form>
+      <h3 class="list-heading">👪 登録済みの家族（クリックで編集）</h3>
+      <ul id="family-list" class="entity-list"></ul>
+
+      <h3 class="list-heading">🔗 家族同士を手動でつなぐ</h3>
+      <form id="connect-form">
+        <label>誰と
+          <select id="connect-person-a"></select>
+        </label>
+        <label>誰を
+          <select id="connect-person-b"></select>
+        </label>
+        <label>関係の種類
+          <select id="connect-type">
+            <option value="normal">普通の関係</option>
+            <option value="strong">強い関係</option>
+            <option value="weak">弱い関係</option>
+            <option value="conflict">対立関係</option>
+            <option value="working">働きかけ（矢印）</option>
+            <option value="spouse">配偶者関係</option>
+            <option value="parent_child">親子関係</option>
+          </select>
+        </label>
+        <button type="submit" class="primary-button secondary">🔗 つなぐ</button>
+      </form>
+      <h3 class="list-heading">🔗 つながっている関係</h3>
+      <ul id="connect-list" class="entity-list"></ul>
+    </section>
+
+    <section class="tab-panel hidden" id="tab-institution">
+      <form id="institution-form">
+        <input type="hidden" id="institution-editing-id" value="">
+        <label>機関名
+          <div class="combo-box">
+            <input type="text" id="institution-name" required autocomplete="off">
+            <button type="button" class="combo-toggle">▾</button>
+            <ul class="combo-list hidden">
+              <li>居宅介護支援事業所</li>
+              <li>地域包括支援センター</li>
+              <li>訪問介護</li>
+              <li>訪問看護</li>
+              <li>デイサービス</li>
+              <li>ショートステイ</li>
+              <li>福祉用具</li>
+              <li>かかりつけ医</li>
+              <li>病院</li>
+              <li>市役所福祉課</li>
+              <li>民生委員</li>
+              <li>学校</li>
+              <li>職場</li>
+              <li>近隣住人</li>
+              <li>友人</li>
+            </ul>
+          </div>
+        </label>
+        <label>分類
+          <div class="combo-box">
+            <input type="text" id="institution-category" value="医療" autocomplete="off">
+            <button type="button" class="combo-toggle">▾</button>
+            <ul class="combo-list hidden">
+              <li>医療</li>
+              <li>介護</li>
+              <li>障害福祉</li>
+              <li>行政</li>
+              <li>インフォーマル支援</li>
+              <li>その他</li>
+            </ul>
+          </div>
+        </label>
+        <label>備考
+          <textarea id="institution-note" rows="2" placeholder="気になる点などメモ"></textarea>
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="primary-button secondary" id="institution-submit-button">＋ 関係機関を追加</button>
+          <button type="button" id="institution-cancel-edit" class="secondary-button hidden">編集をやめる</button>
+          <button type="button" id="institution-delete-button" class="danger-button hidden">🗑 削除</button>
+        </div>
+      </form>
+      <h3 class="list-heading">🏥 登録済みの関係機関（クリックで編集）</h3>
+      <ul id="institution-list" class="entity-list"></ul>
+
+      <h3 class="list-heading">🔗 関係機関をつなぐ</h3>
+      <p class="hint-text">本人だけ・夫婦両方・子だけ・機関同士など、つながりの数だけ何度でも追加できます。</p>
+      <form id="institution-connect-form">
+        <label>つなぐ先①（人物・機関）
+          <select id="institution-connect-a"></select>
+        </label>
+        <label>つなぐ先②（人物・機関）
+          <select id="institution-connect-b"></select>
+        </label>
+        <label>関係の種類
+          <select id="institution-connect-type">
+            <option value="working">働きかけ（矢印）</option>
+            <option value="normal">普通の関係</option>
+            <option value="strong">強い関係</option>
+            <option value="weak">弱い関係</option>
+            <option value="conflict">対立関係</option>
+          </select>
+        </label>
+        <button type="submit" class="primary-button secondary">🔗 つなぐ</button>
+      </form>
+      <h3 class="list-heading">🔗 つながっている関係</h3>
+      <ul id="institution-connect-list" class="entity-list"></ul>
+    </section>
+
+    <section class="tab-panel hidden" id="tab-group">
+      <p class="hint-text">本人・家族・関係機関の中から好きな相手を選んで、点線の枠で囲ったグループを作れます（例：拡大家族・職場・趣味の仲間）。グループそのものに関係線をつなぐこともできます。</p>
+      <form id="group-form">
+        <input type="hidden" id="group-editing-id" value="">
+        <label>グループ名
+          <input type="text" id="group-label" placeholder="例：拡大家族" required>
+        </label>
+        <label>メンバー（複数選択可）</label>
+        <div id="group-member-checkboxes" class="checkbox-list"></div>
+        <div class="form-actions">
+          <button type="submit" class="primary-button secondary" id="group-submit-button">＋ グループを作成</button>
+          <button type="button" id="group-cancel-edit" class="secondary-button hidden">編集をやめる</button>
+          <button type="button" id="group-delete-button" class="danger-button hidden">🗑 削除</button>
+        </div>
+      </form>
+      <h3 class="list-heading">👥 登録済みのグループ（クリックで編集）</h3>
+      <ul id="group-list" class="entity-list"></ul>
+    </section>
+  </aside>
+
+  <section class="canvas-wrap">
+    <svg id="canvas" width="100%" height="100%"></svg>
+    <div class="panel-toggle-cluster">
+      <button type="button" id="btn-toggle-sidepanel" class="panel-toggle-switch" title="入力フォームの表示・非表示を切り替えます">
+        <span class="switch-track"><span class="switch-knob"></span></span>
+        <span class="switch-label">☰ フォーム</span>
+      </button>
+      <button type="button" id="btn-toggle-notepanel" class="panel-toggle-switch" title="備考欄の表示・非表示を切り替えます">
+        <span class="switch-track"><span class="switch-knob"></span></span>
+        <span class="switch-label">📝 備考</span>
+      </button>
+    </div>
+
+    <div class="zoom-control">
+      <button type="button" id="btn-zoom-out" class="zoom-btn" title="縮小します">－</button>
+      <button type="button" id="btn-zoom-reset" class="zoom-percent" title="標準サイズ（100%）に戻します">100%</button>
+      <button type="button" id="btn-zoom-in" class="zoom-btn" title="拡大します">＋</button>
+    </div>
+    <div class="canvas-overlay-toolbars">
+      <div class="canvas-toolbar">
+        <button id="btn-add-person" class="tool-button add-button" title="新しい人物を追加します">➕ 人物を追加</button>
+        <button id="btn-tidy" class="tool-button" title="家族・関係機関を綺麗な位置に並べ直します">🧹 整頓</button>
+        <button id="btn-fit-view" class="tool-button" title="全体が見えるように表示を調整します">🔍 全体表示</button>
+        <button id="btn-undo" class="tool-button" title="直前の操作を元に戻します（Ctrl/Cmd+Z）" disabled>↩️ 元に戻す</button>
+        <button id="btn-redo" class="tool-button" title="元に戻した操作をやり直します（Ctrl/Cmd+Shift+Z）" disabled>↪️ やり直す</button>
+      </div>
+
+      <div class="view-mode-toolbar">
+        <button class="view-mode-button active" data-view="both" title="ジェノグラム・エコマップの両方を表示します">👀 両方</button>
+        <button class="view-mode-button" data-view="genogram" title="ジェノグラムだけを表示します">🌳 ジェノグラムのみ</button>
+        <button class="view-mode-button" data-view="ecomap" title="エコマップだけを表示します">🕸 エコマップのみ</button>
+      </div>
+    </div>
+
+    <div id="person-popup" class="floating-popup hidden">
+      <button type="button" id="person-popup-close-x" class="popup-close-x" title="閉じる">✕</button>
+      <label>名前
+        <input type="text" id="person-popup-name">
+      </label>
+      <label>年齢
+        <div class="combo-box">
+          <input type="text" inputmode="numeric" id="person-popup-age" autocomplete="off">
+          <button type="button" class="combo-toggle">▾</button>
+          <ul class="combo-list hidden">
+            <li>0</li><li>3</li><li>6</li><li>10</li><li>15</li><li>18</li>
+            <li>20</li><li>30</li><li>40</li><li>50</li><li>60</li><li>65</li>
+            <li>70</li><li>75</li><li>80</li><li>85</li><li>90</li><li>100</li>
+          </ul>
+        </div>
+      </label>
+      <label>性別
+        <div class="combo-box">
+          <input type="text" id="person-popup-gender" autocomplete="off">
+          <button type="button" class="combo-toggle">▾</button>
+          <ul class="combo-list hidden">
+            <li>男性</li>
+            <li>女性</li>
+            <li>不明</li>
+          </ul>
+        </div>
+      </label>
+      <label>基準にする人<span class="field-hint">（孫・子の配偶者などを追加する時に変更）</span>
+        <select id="person-popup-anchor"></select>
+      </label>
+      <label>続柄<span class="field-hint">（「基準にする人」から見た続柄）</span>
+        <div class="combo-box">
+          <input type="text" id="person-popup-relation" autocomplete="off">
+          <button type="button" class="combo-toggle">▾</button>
+          <ul class="combo-list hidden">
+            <li>本人</li>
+            <li>父</li>
+            <li>母</li>
+            <li>配偶者</li>
+            <li>子</li>
+            <li>兄</li>
+            <li>姉</li>
+            <li>弟</li>
+            <li>妹</li>
+            <li>孫</li>
+            <li>祖父</li>
+            <li>祖母</li>
+            <li>曽祖父</li>
+            <li>曽祖母</li>
+            <li>義父</li>
+            <li>義母</li>
+            <li>おじ</li>
+            <li>おば</li>
+            <li>いとこ</li>
+            <li>甥</li>
+            <li>姪</li>
+            <li>友人</li>
+            <li>近隣住人</li>
+            <li>その他</li>
+          </ul>
+        </div>
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" id="person-popup-cohabiting"> 同居している
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" id="person-popup-deceased"> 故人（死亡）
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" id="person-popup-key-person"> ★ キーパーソン（主たる介護者・連絡先）
+      </label>
+      <label>備考
+        <textarea id="person-popup-note" rows="2" placeholder="気になる点などメモ"></textarea>
+      </label>
+      <div class="form-actions">
+        <button type="button" id="person-popup-save" class="primary-button">💾 保存</button>
+        <button type="button" id="person-popup-duplicate" class="secondary-button">📋 同じ構成で複製</button>
+        <button type="button" id="person-popup-delete" class="danger-button">🗑 削除</button>
+        <button type="button" id="person-popup-close" class="secondary-button">✕ 閉じる</button>
+      </div>
+
+      <h4 class="popup-section-heading">🔗 つなぐ</h4>
+      <label>つなぐ相手
+        <select id="person-popup-link-target"></select>
+      </label>
+      <label>関係の種類
+        <select id="person-popup-link-type">
+          <option value="normal">普通の関係</option>
+          <option value="strong">強い関係</option>
+          <option value="weak">弱い関係</option>
+          <option value="conflict">対立関係</option>
+          <option value="working">働きかけ（矢印）</option>
+          <option value="spouse">配偶者関係</option>
+          <option value="parent_child">親子関係</option>
+        </select>
+      </label>
+      <p class="hint-text">「働きかけ」を選ぶと、この人物→つなぐ相手の方向に矢印が表示されます。</p>
+      <button type="button" id="person-popup-link-button" class="primary-button secondary">🔗 この関係でつなぐ</button>
+    </div>
+
+    <div id="institution-popup" class="floating-popup hidden">
+      <button type="button" id="institution-popup-close-x" class="popup-close-x" title="閉じる">✕</button>
+      <label>機関名
+        <div class="combo-box">
+          <input type="text" id="institution-popup-name" autocomplete="off">
+          <button type="button" class="combo-toggle">▾</button>
+          <ul class="combo-list hidden">
+            <li>居宅介護支援事業所</li>
+            <li>地域包括支援センター</li>
+            <li>訪問介護</li>
+            <li>訪問看護</li>
+            <li>デイサービス</li>
+            <li>ショートステイ</li>
+            <li>福祉用具</li>
+            <li>かかりつけ医</li>
+            <li>病院</li>
+            <li>市役所福祉課</li>
+            <li>民生委員</li>
+            <li>学校</li>
+            <li>職場</li>
+            <li>近隣住人</li>
+            <li>友人</li>
+          </ul>
+        </div>
+      </label>
+      <label>分類
+        <div class="combo-box">
+          <input type="text" id="institution-popup-category" autocomplete="off">
+          <button type="button" class="combo-toggle">▾</button>
+          <ul class="combo-list hidden">
+            <li>医療</li>
+            <li>介護</li>
+            <li>障害福祉</li>
+            <li>行政</li>
+            <li>インフォーマル支援</li>
+            <li>その他</li>
+          </ul>
+        </div>
+      </label>
+      <label>備考
+        <textarea id="institution-popup-note" rows="2" placeholder="気になる点などメモ"></textarea>
+      </label>
+      <div class="form-actions">
+        <button type="button" id="institution-popup-save" class="primary-button secondary">💾 保存</button>
+        <button type="button" id="institution-popup-delete" class="danger-button">🗑 削除</button>
+        <button type="button" id="institution-popup-close" class="secondary-button">✕ 閉じる</button>
+      </div>
+
+      <h4 class="popup-section-heading">🔗 つなぐ</h4>
+      <label>つなぐ相手
+        <select id="institution-popup-link-target"></select>
+      </label>
+      <label>関係の種類
+        <select id="institution-popup-link-type">
+          <option value="working">働きかけ（矢印）</option>
+          <option value="normal">普通の関係</option>
+          <option value="strong">強い関係</option>
+          <option value="weak">弱い関係</option>
+          <option value="conflict">対立関係</option>
+        </select>
+      </label>
+      <p class="hint-text">「働きかけ」を選ぶと、この機関→つなぐ相手の方向に矢印が表示されます。</p>
+      <button type="button" id="institution-popup-link-button" class="primary-button secondary">🔗 この関係でつなぐ</button>
+    </div>
+  </section>
+</main>
+
+<footer class="note-panel" id="note-panel">
+  <label for="note-textarea">📝 備考（事例検討メモなど）</label>
+  <textarea id="note-textarea" placeholder="支援体制の補足情報、事例検討のメモなどを記入してください"></textarea>
+</footer>
+
+<div id="print-area"></div>
+
+<div id="new-case-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2>🆕 新しいジェノグラムを作成</h2>
+    <p class="hint-text">まず本人の情報を入力してください。ここで入力した名前で「📁保存データ一覧」に表示されます。</p>
+    <label>本人の名前（必須）
+      <input type="text" id="new-case-name" required autocomplete="off">
+    </label>
+    <label>年齢（わかれば）
+      <input type="text" id="new-case-age" placeholder="例：78">
+    </label>
+    <label>性別
+      <select id="new-case-gender">
+        <option value="unknown">不明</option>
+        <option value="male">男性</option>
+        <option value="female">女性</option>
+      </select>
+    </label>
+    <label>メモ（任意・一覧で見分けやすくなります）
+      <input type="text" id="new-case-label" placeholder="例：研修用、事例検討用">
+    </label>
+    <div class="form-actions">
+      <button id="new-case-confirm" class="primary-button">✨ この内容で始める</button>
+      <button id="new-case-cancel" class="secondary-button">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<div id="case-list-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2>📁 保存されているジェノグラム</h2>
+    <p class="hint-text">この端末のブラウザに自動保存されている一覧です。本人の名前で管理されます。</p>
+    <ul id="case-list" class="entity-list"></ul>
+    <button id="case-list-close" class="secondary-button">閉じる</button>
+  </div>
+</div>
+
+<div id="help-modal" class="modal-overlay hidden">
+  <div class="modal-box help-modal-box">
+    <h2>❓ ジェノグラム・エコマップとは？</h2>
+
+    <h3>ジェノグラムとは</h3>
+    <p>家族の構成・世代・関係性を図にして見える化したものです。本人を基準に、父母・配偶者・子・兄弟姉妹などを線でつなぎ、家族構造や世代間のつながりを一目で把握できるようにします。家族療法やソーシャルワーク、ケアマネジメントの現場で、生活歴や家族関係のアセスメントに使われます。</p>
+
+    <h3>エコマップとは</h3>
+    <p>本人や家族を中心に置き、関係機関・地域・友人などの「社会的な支援網（ソーシャルサポートネットワーク）」を図にしたものです。1975年に米国のAnn Hartmanが考案した手法で、誰が・どんな関係で・どれくらいの強さで本人や家族とつながっているかを可視化し、支援が手薄な部分や活用できる資源を見つけるために使います。</p>
+
+    <h3>図形・線の意味（このアプリでの表現）</h3>
+    <ul class="help-list">
+      <li><strong>四角</strong>＝男性、<strong>丸</strong>＝女性、<strong>ひし形</strong>＝性別不明・その他</li>
+      <li><strong>二重線の図形</strong>＝本人（基準者）</li>
+      <li><strong>実線１本</strong>＝結婚・親子関係などの普通のつながり</li>
+      <li><strong>実線２本（並行）</strong>＝強い・親密な関係</li>
+      <li><strong>破線</strong>＝弱い・距離のある関係</li>
+      <li><strong>ギザギザ線</strong>＝対立・緊張関係</li>
+      <li><strong>矢印付きの線</strong>＝一方向的な働きかけ（エコマップでよく使われる表現）</li>
+      <li><strong>点線で囲まれた範囲</strong>＝同居している家族、またはグループ化した範囲</li>
+      <li><strong>結婚線に斜線1本</strong>＝別居、<strong>斜線2本</strong>＝離婚</li>
+      <li><strong>図形に×印</strong>＝故人（死亡）</li>
+      <li><strong>★キーパーソン</strong>＝主たる介護者・連絡先となる方</li>
+    </ul>
+
+    <h3>作り方の基本</h3>
+    <ol class="help-list">
+      <li>まず本人の名前を入力して、本人を中心に置きます</li>
+      <li>「👪家族追加」から父母・配偶者・子などを追加すると、結婚線・親子の樹形図が自動で引かれます</li>
+      <li>「同居している」にチェックを入れた家族は、点線で自動的に囲まれます</li>
+      <li>「故人（死亡）」「★キーパーソン」のチェックで、それぞれ図形に×印・キーパーソンの表示が付きます</li>
+      <li>結婚線（配偶者関係）をクリックすると、「／別居」「／／離婚」のマークを付けられます</li>
+      <li>「🏢関係機関登録」から関係機関や地域の人を追加し、「🔗つなぐ」で関係性（強さ・対立・働きかけなど）を設定してつなぎます</li>
+      <li>全体を整えたいときは、キャンバス左上の「🧹整頓」「🔍全体表示」ボタンを使います</li>
+    </ol>
+
+    <h3>子の配偶者・孫など、本人以外を基準にした続柄を追加する</h3>
+    <p>続柄欄は普段「本人から見てどんな関係か」を入力しますが、「基準にする人」を本人から別の人（例：すでに登録した長男）に変えると、「その人から見た続柄」として追加できます。</p>
+    <ul class="help-list">
+      <li><strong>子の配偶者</strong>：基準にする人＝対象の子、続柄＝「配偶者」</li>
+      <li><strong>孫</strong>：基準にする人＝対象の子、続柄＝「子」（結婚線・兄弟バーまで自動でつながります）</li>
+      <li><strong>義父・義母</strong>：基準にする人＝配偶者、続柄＝「父」「母」</li>
+      <li><strong>おじ・おば</strong>：基準にする人＝父または母、続柄＝「兄」「姉」「弟」「妹」</li>
+      <li><strong>甥・姪</strong>：基準にする人＝兄弟姉妹、続柄＝「子」</li>
+    </ul>
+    <p class="hint-text">※ 続柄欄に「孫」「おじ」など本人から2世代以上離れた言葉を単体で入力するだけだと、おおよその位置には表示されますが、誰ともつながる線が引かれません（「誰の孫か」が分からないためです）。線までつなげたい場合は、上の表の通り「基準にする人」を必ず設定してください。</p>
+
+    <button id="help-modal-close" class="secondary-button">閉じる</button>
+  </div>
+</div>
+
+<div id="usage-guide-modal" class="modal-overlay hidden">
+  <div class="modal-box help-modal-box">
+    <h2>📘 使い方ガイド</h2>
+    <p class="hint-text">パソコン操作に慣れていない方向けに、ボタンの押し方だけをまとめました。難しい用語の説明は「❓ジェノグラム・エコマップとは？」をご覧ください。</p>
+
+    <h3>① 新しく作る</h3>
+    <ol class="help-list">
+      <li>画面上部の「✨ はじめから作成」を押します</li>
+      <li>出てきた画面で本人の名前を入力します（必須）。年齢・性別・メモ（任意。「研修用」「事例検討用」など、あとで一覧で見分けるための一言）は分かれば入力。どれも後からでも変更できます</li>
+      <li>「✨ この内容で始める」を押すとスタートします</li>
+    </ol>
+
+    <h3>② 家族を追加する</h3>
+    <ol class="help-list">
+      <li>図の右上の「➕ 人物を追加」を押すか、左側の「👪 家族追加」タブで、名前・年齢・性別・続柄（父・母・配偶者・子など）を入力します</li>
+      <li>「＋ 家族を追加」を押すと、図の中に自動で追加されます</li>
+      <li>図の何もない場所をクリック（右クリックでも左クリックでも）すると、その場で「➕人物を追加」などを選べるミニメニューも出ます</li>
+      <li>「同居している」にチェックを入れると、その家族は自動で点線の枠で囲まれます</li>
+      <li>点線の枠（同居枠＝グレーの丸／グループ枠＝オレンジの丸）の縁には小さな丸が並んでいます。これをつまんで縦・横・斜めどの方向にもドラッグでき、その部分だけ枠を凹ませたり広げたりできます（無関係な人の図形を避けたい時に便利です）。ダブルクリックするとその点だけ自動の形に戻ります。枠が重なって丸がつかみにくい時は、つかみたい方の丸を一度クリックすると手前に出てきます</li>
+      <li>「子の配偶者」「孫」など本人以外を基準にした関係を追加したい時は、続柄欄の上にある「基準にする人」を本人から該当の家族に変更してから続柄を入力します（詳しくは「❓ジェノグラム・エコマップとは？」参照）</li>
+    </ol>
+
+    <h3>③ 図の中の人物・関係機関をその場で編集する</h3>
+    <ol class="help-list">
+      <li>図の中の人物や関係機関の図形を1回クリックすると、その場に編集できる小さな画面（ポップアップ）が出ます</li>
+      <li>名前・年齢・続柄などを直して「💾 保存」を押せば反映されます。「🗑 削除」でその人・機関ごと消せます</li>
+      <li>人物のポップアップには「📋 同じ構成で複製」もあります。性別・続柄・基準にする人・同居の有無などをそのまま引き継いだ人物が「（名前）（2）」という名前ですぐ横に追加されます（似た人物を続けて追加する時に便利です。名前は後から書き換えてください）</li>
+      <li>ポップアップを閉じるには、右上の「✕」を押すか、ポップアップの外側をクリックします</li>
+      <li>左側の「登録済みの家族／関係機関（クリックで編集）」一覧から名前をクリックしても、同じように編集できます</li>
+    </ol>
+
+    <h3>④ 関係性（線）を変える・消す</h3>
+    <ol class="help-list">
+      <li>図の中の線を1回クリックすると、関係の種類（普通・強い・弱い・対立・働きかけなど）を選ぶメニューが出ます</li>
+      <li>同じメニューの一番下「🗑 関係を削除」で、その線を消せます</li>
+      <li>左側の「登録済みのつながり」一覧からも、🗑ボタンで消せます</li>
+    </ol>
+
+    <h3>⑤ 関係機関（病院・施設・地域の人など）を登録する</h3>
+    <ol class="help-list">
+      <li>左側の「🏢 関係機関登録」タブで、名前・分類を入力して登録します</li>
+      <li>「🔗 関係機関をつなぐ」で、本人や家族、他の機関とのつながりを作れます</li>
+      <li>「同居している」家族が1人以上いると、選択肢に「同居している世帯全体（枠線）」も出てきます。これを選ぶと、個々の家族ではなく世帯全体に対する関係機関のつながりを描けます（例：地域包括支援センターが世帯全体に関わっている、など）</li>
+    </ol>
+
+    <h3>⑤-2 グループ（任意の枠線）を作る</h3>
+    <ol class="help-list">
+      <li>左側の「👥 グループ化」タブで、グループ名を入力し、囲みたい人物・関係機関にチェックを入れます（拡大家族・職場・趣味の仲間など）</li>
+      <li>「＋ グループを作成」を押すと、図の中にチェックしたメンバーを囲む点線の枠が表示されます</li>
+      <li>「🔗 関係機関をつなぐ」の選択肢にもグループが出てくるので、枠そのものに関係線をつなぐこともできます</li>
+      <li>図の中の枠線・グループ名をクリックすると、いつでも編集・削除できます</li>
+    </ol>
+
+    <h3>⑥ 図を綺麗に整える</h3>
+    <ol class="help-list">
+      <li>図の左上「🧹 整頓」を押すと、ズレた位置が綺麗に並び直ります</li>
+      <li>「🔍 全体表示」を押すと、図の全体が画面に収まるように調整されます</li>
+      <li>マウスの操作：図の何もない部分をドラッグすると画面を動かせます、ホイール（スクロール）で拡大・縮小できます</li>
+      <li>図の右下に今の拡大率（％）が表示されます。「－」「＋」で段階的に拡大縮小、「100%」の表示をクリックすると標準サイズに戻ります</li>
+      <li>操作を間違えたら「↩️ 元に戻す」（Ctrl/Cmd+Z）、戻しすぎたら「↪️ やり直す」で直せます</li>
+      <li>画面が狭いパソコンでは、左側の入力フォームや下の備考欄が図の表示スペースを圧迫することがあります。図の左下にある「☰ フォーム」「📝 備考」ボタンを押すと、それぞれ折りたためて図を大きく表示できます（もう一度押すと元に戻ります）</li>
+    </ol>
+
+    <h3>⑦ 表示を切り替える（ジェノグラムのみ／エコマップのみ）</h3>
+    <ol class="help-list">
+      <li>図の右上に「👀 両方」「🌳 ジェノグラムのみ」「🕸 エコマップのみ」のボタンがあります</li>
+      <li>家族の関係だけを見たいときは「🌳 ジェノグラムのみ」、関係機関とのつながりだけを見たいときは「🕸 エコマップのみ」を選びます</li>
+      <li>データが消えるわけではなく、見え方を一時的に切り替えるだけなので、いつでも「👀 両方」に戻せます</li>
+    </ol>
+
+    <h3>⑧ 保存する・他の事例を開く</h3>
+    <ol class="help-list">
+      <li>操作するたびに自動でこのパソコンに保存されます。特別な操作は不要です</li>
+      <li>複数の方の図を作っている場合は「📁 保存データ一覧」から名前（メモがあればメモも表示）を選んで「開く」を押します。一覧の「✏️」で後からメモを付け直すこともできます</li>
+      <li>ファイルとして書き出したい場合は「💾 データ取り出し」を使います（ファイル名を聞かれるので入力してください）</li>
+      <li>すでにあるファイルを読み込みたい場合は「📂 手動でデータを開く」を使います</li>
+    </ol>
+
+    <h3>⑨ 画像・PDFとして書き出す</h3>
+    <ol class="help-list">
+      <li>「🖼 画像出力」または「📄 PDF出力」を押します</li>
+      <li>出てきた画面で「両方／ジェノグラムのみ／エコマップのみ」を選べます（今の画面の表示に合わせて最初から選ばれています）</li>
+      <li>「透明背景」「モノクロ」が必要なら✓を入れ、「⬇ ダウンロードする」を押します</li>
+      <li>PDF出力の時だけ、「用紙の向き」（自動／横／縦）、「作成者名」（任意。一度入れれば次回も引き継がれます）、「凡例を入れる」（図形・線の意味を表す凡例を1枚に同梱、初期値はON）も選べます</li>
+      <li>「横」を選ぶと、図の右側に凡例・備考がまとまった紙面になります。「縦」を選ぶと、図の下に凡例・備考が続く紙面になります</li>
+    </ol>
+
+    <button id="usage-guide-close" class="secondary-button">閉じる</button>
+  </div>
+</div>
+
+<div id="export-options-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2 id="export-options-title">🖼 画像出力</h2>
+    <label class="checkbox-label"><input type="radio" name="export-view-mode" id="export-view-both" value="both"> 👀 両方</label>
+    <label class="checkbox-label"><input type="radio" name="export-view-mode" id="export-view-genogram" value="genogram"> 🌳 ジェノグラムのみ</label>
+    <label class="checkbox-label"><input type="radio" name="export-view-mode" id="export-view-ecomap" value="ecomap"> 🕸 エコマップのみ</label>
+    <label class="checkbox-label"><input type="checkbox" id="export-transparent"> 透明背景</label>
+    <label class="checkbox-label"><input type="checkbox" id="export-monochrome"> モノクロ</label>
+    <div id="export-pdf-only-options">
+      <p class="field-hint" style="margin:0 0 4px; display:block;">用紙の向き</p>
+      <label class="checkbox-label">
+        <input type="radio" name="export-orientation" id="export-orientation-auto" value="auto" checked> 自動（図の形に合わせる）
+      </label>
+      <label class="checkbox-label">
+        <input type="radio" name="export-orientation" id="export-orientation-landscape" value="landscape"> 横
+      </label>
+      <label class="checkbox-label">
+        <input type="radio" name="export-orientation" id="export-orientation-portrait" value="portrait"> 縦
+      </label>
+      <label>作成者名（任意）
+        <input type="text" id="export-creator-name" placeholder="ここに入力してください">
+      </label>
+      <label class="checkbox-label"><input type="checkbox" id="export-include-legend" checked> 図形・線の意味（凡例）を入れる</label>
+    </div>
+    <div class="form-actions">
+      <button id="export-options-confirm" class="primary-button">⬇ ダウンロードする</button>
+      <button id="export-options-cancel" class="secondary-button">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<div id="canvas-context-menu" class="context-menu hidden">
+  <button data-action="add-person">➕ 人物を追加</button>
+  <button data-action="add-institution">➕ 関係機関を追加</button>
+  <button data-action="tidy">🧹 整頓</button>
+  <button data-action="fit">🔍 全体表示</button>
+</div>
+
+<div id="line-context-menu" class="context-menu hidden">
+  <button data-type="normal">普通の関係</button>
+  <button data-type="strong">強い関係</button>
+  <button data-type="weak">弱い関係</button>
+  <button data-type="conflict">対立関係</button>
+  <button data-type="working">働きかけ（矢印）</button>
+  <button data-type="spouse">配偶者関係</button>
+  <button data-type="parent_child">親子関係</button>
+  <button id="line-context-reverse" data-action="reverse">↔ 向きを反転</button>
+  <div id="line-context-marital" class="context-menu-section hidden">
+    <button data-marital="">婚姻中（マークなし）</button>
+    <button data-marital="separated">／ 別居</button>
+    <button data-marital="divorced">／／ 離婚</button>
+  </div>
+  <button id="line-context-delete" data-action="delete">🗑 関係を削除</button>
+</div>
+
+<div id="save-toast" class="save-toast hidden">💾 保存しました</div>
+
+<script src="models.js"></script>
+<script src="combobox.js"></script>
+<script src="relation_rules.js"></script>
+<script src="canvas.js"></script>
+<script src="forms.js"></script>
+<script src="document_store.js"></script>
+<script src="export.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
