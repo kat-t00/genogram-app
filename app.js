@@ -320,6 +320,12 @@
       Genogram.forms.focusAddForm();
     });
 
+    document.getElementById("btn-add-institution").addEventListener("click", () => {
+      ensureSidePanelOpen();
+      document.querySelector('.tab-button[data-tab="institution"]').click();
+      document.getElementById("institution-name").focus();
+    });
+
     document.getElementById("btn-undo").addEventListener("click", undo);
     document.getElementById("btn-redo").addEventListener("click", redo);
     document.addEventListener("keydown", (evt) => {

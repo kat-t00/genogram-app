@@ -1343,6 +1343,7 @@ body.note-panel-collapsed .note-panel {
     <div class="canvas-overlay-toolbars">
       <div class="canvas-toolbar">
         <button id="btn-add-person" class="tool-button add-button" title="新しい人物を追加します">➕ 人物を追加</button>
+        <button id="btn-add-institution" class="tool-button add-button" title="新しい関係機関を追加します">🏥 関係機関を追加</button>
         <button id="btn-tidy" class="tool-button" title="家族・関係機関を綺麗な位置に並べ直します">🧹 整頓</button>
         <button id="btn-fit-view" class="tool-button" title="全体が見えるように表示を調整します">🔍 全体表示</button>
         <button id="btn-undo" class="tool-button" title="直前の操作を元に戻します（Ctrl/Cmd+Z）" disabled>↩️ 元に戻す</button>
@@ -1657,7 +1658,7 @@ body.note-panel-collapsed .note-panel {
 
     <h3>⑤ 関係機関（病院・施設・地域の人など）を登録する</h3>
     <ol class="help-list">
-      <li>左側の「🏢 関係機関登録」タブで、名前・分類を入力して登録します</li>
+      <li>図の右上の「🏥 関係機関を追加」を押すか、左側の「🏢 関係機関登録」タブで、名前・分類を入力して登録します</li>
       <li>「🔗 関係機関をつなぐ」で、本人や家族、他の機関とのつながりを作れます</li>
       <li>「同居している」家族が1人以上いると、選択肢に「同居している世帯全体（枠線）」も出てきます。これを選ぶと、個々の家族ではなく世帯全体に対する関係機関のつながりを描けます（例：地域包括支援センターが世帯全体に関わっている、など）</li>
     </ol>
@@ -5673,6 +5674,12 @@ Genogram.createDocument = function (overrides) {
     document.getElementById("btn-add-person").addEventListener("click", () => {
       ensureSidePanelOpen();
       Genogram.forms.focusAddForm();
+    });
+
+    document.getElementById("btn-add-institution").addEventListener("click", () => {
+      ensureSidePanelOpen();
+      document.querySelector('.tab-button[data-tab="institution"]').click();
+      document.getElementById("institution-name").focus();
     });
 
     document.getElementById("btn-undo").addEventListener("click", undo);
