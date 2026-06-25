@@ -192,20 +192,30 @@
     localStorage.setItem(PANEL_STATE_KEY, JSON.stringify(state));
   }
 
+  function applySideState(collapsed) {
+    const sideToggle = document.getElementById("btn-toggle-sidepanel");
+    document.body.classList.toggle("side-panel-collapsed", collapsed);
+    sideToggle.classList.toggle("is-open", !collapsed);
+  }
+
+  function applyNoteState(collapsed) {
+    const noteToggle = document.getElementById("btn-toggle-notepanel");
+    document.body.classList.toggle("note-panel-collapsed", collapsed);
+    noteToggle.classList.toggle("is-open", !collapsed);
+  }
+
+  // 入力フォームを隠している状態で「人物を追加」等を押すと、隠れたフォームの中で
+  // 反応してしまい操作している実感がないため、フォームを使う操作の前には必ず開ける。
+  function ensureSidePanelOpen() {
+    if (!document.body.classList.contains("side-panel-collapsed")) return;
+    applySideState(false);
+    savePanelState({ ...loadPanelState(), sideCollapsed: false });
+  }
+
   function setupPanelToggles() {
     const state = loadPanelState();
     const sideToggle = document.getElementById("btn-toggle-sidepanel");
     const noteToggle = document.getElementById("btn-toggle-notepanel");
-
-    function applySideState(collapsed) {
-      document.body.classList.toggle("side-panel-collapsed", collapsed);
-      sideToggle.classList.toggle("is-open", !collapsed);
-    }
-
-    function applyNoteState(collapsed) {
-      document.body.classList.toggle("note-panel-collapsed", collapsed);
-      noteToggle.classList.toggle("is-open", !collapsed);
-    }
 
     applySideState(!!state.sideCollapsed);
     applyNoteState(!!state.noteCollapsed);
@@ -306,6 +316,7 @@
     setupZoomControl();
 
     document.getElementById("btn-add-person").addEventListener("click", () => {
+      ensureSidePanelOpen();
       Genogram.forms.focusAddForm();
     });
 
@@ -517,8 +528,10 @@
       button.addEventListener("click", () => {
         const action = button.dataset.action;
         if (action === "add-person") {
+          ensureSidePanelOpen();
           Genogram.forms.focusAddForm();
         } else if (action === "add-institution") {
+          ensureSidePanelOpen();
           document.querySelector('.tab-button[data-tab="institution"]').click();
           document.getElementById("institution-name").focus();
         } else if (action === "tidy") {
