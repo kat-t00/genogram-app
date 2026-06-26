@@ -571,8 +571,11 @@
 
     Genogram.canvas.setLineContextMenuHandler((linkRef, clientX, clientY) => {
       activeLink = linkRef;
-      // 樹形図の枝（自動生成された親子バー）は反転の対象外にする
-      document.getElementById("line-context-reverse").classList.toggle("hidden", !!linkRef.__familyStem);
+      // 樹形図の枝と双方向の働きかけは反転の対象外
+      document.getElementById("line-context-reverse").classList.toggle(
+        "hidden",
+        !!linkRef.__familyStem || linkRef.type === Genogram.RelationType.WORKING_BOTH
+      );
       // 別居・離婚マークは配偶者関係の線にだけ意味がある
       document
         .getElementById("line-context-marital")

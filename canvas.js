@@ -228,8 +228,9 @@
     const margin = 60;
     const contentWidth = Math.max(1, bounds.maxX - bounds.minX);
     const contentHeight = Math.max(1, bounds.maxY - bounds.minY);
+    const FIT_MAX_SCALE = 1.5; // fitToView時は拡大しすぎないよう上限を絞る（手動ズームは最大MAX_SCALE=3まで可能）
     const scale = Math.min(
-      MAX_SCALE,
+      FIT_MAX_SCALE,
       Math.max(MIN_SCALE, Math.min((rect.width - margin * 2) / contentWidth, (rect.height - margin * 2) / contentHeight))
     );
     const contentCenterX = (bounds.minX + bounds.maxX) / 2;
@@ -675,7 +676,7 @@
   // すでに枠線(グループ・同居の枠)の縁に合わせてある点(groupHulls管理下)は、
   // それ以上ずらすと縁から浮いてしまうのでそのままにする。
   function arrowAdjustedEndpoint(nodeId, point, fromPoint, type) {
-    if (type !== Genogram.RelationType.WORKING) return point;
+    if (type !== Genogram.RelationType.WORKING && type !== Genogram.RelationType.WORKING_BOTH) return point;
     if (groupHulls[nodeId]) return point;
     const dx = point.x - fromPoint.x;
     const dy = point.y - fromPoint.y;
@@ -692,25 +693,28 @@
     const visible = svgEl("g");
 
     if (type === Genogram.RelationType.CONFLICT) {
-      const points = zigzagPoints(p1, p2);
-      for (let i = 0; i < points.length - 1; i++) {
-        visible.appendChild(
-          svgEl("line", {
-            x1: points[i].x, y1: points[i].y, x2: points[i + 1].x, y2: points[i + 1].y,
-            stroke, "stroke-width": 2,
-          })
-        );
+      // ストレスのある関係：実線＋垂直の刻み線（||||）標準エコマップ記法
+      visible.appendChild(svgEl("line", { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, stroke, "stroke-width": 2 }));
+      const totalLen = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
+      const dirX = (p2.x - p1.x) / totalLen;
+      const dirY = (p2.y - p1.y) / totalLen;
+      const perpX = -dirY;
+      const perpY = dirX;
+      const ticks = 7;
+      const tickHalf = 7;
+      for (let i = 1; i <= ticks; i++) {
+        const t = i / (ticks + 1);
+        const cx = p1.x + (p2.x - p1.x) * t;
+        const cy = p1.y + (p2.y - p1.y) * t;
+        visible.appendChild(svgEl("line", {
+          x1: cx - perpX * tickHalf, y1: cy - perpY * tickHalf,
+          x2: cx + perpX * tickHalf, y2: cy + perpY * tickHalf,
+          stroke, "stroke-width": 2,
+        }));
       }
     } else if (type === Genogram.RelationType.STRONG) {
-      const length = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
-      const nx = (-(p2.y - p1.y) / length) * PARALLEL_OFFSET;
-      const ny = ((p2.x - p1.x) / length) * PARALLEL_OFFSET;
-      visible.appendChild(
-        svgEl("line", { x1: p1.x + nx, y1: p1.y + ny, x2: p2.x + nx, y2: p2.y + ny, stroke, "stroke-width": 2 })
-      );
-      visible.appendChild(
-        svgEl("line", { x1: p1.x - nx, y1: p1.y - ny, x2: p2.x - nx, y2: p2.y - ny, stroke, "stroke-width": 2 })
-      );
+      // 強い関係：太い1本線（標準エコマップ記法）
+      visible.appendChild(svgEl("line", { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, stroke, "stroke-width": 4.5 }));
     } else {
       const line = svgEl("line", { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, stroke, "stroke-width": 2 });
       if (type === Genogram.RelationType.WEAK) {
@@ -743,22 +747,29 @@
       });
     }
 
-    if (type === Genogram.RelationType.WORKING) {
-      const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-      const left = {
-        x: p2.x - ARROW_SIZE * Math.cos(angle - Math.PI / 6),
-        y: p2.y - ARROW_SIZE * Math.sin(angle - Math.PI / 6),
-      };
-      const right = {
-        x: p2.x - ARROW_SIZE * Math.cos(angle + Math.PI / 6),
-        y: p2.y - ARROW_SIZE * Math.sin(angle + Math.PI / 6),
-      };
-      visible.appendChild(
-        svgEl("polygon", {
-          points: `${p2.x},${p2.y} ${left.x},${left.y} ${right.x},${right.y}`,
-          fill: stroke,
-        })
-      );
+    if (type === Genogram.RelationType.WORKING || type === Genogram.RelationType.WORKING_BOTH) {
+      // p2側の矢印
+      const angle2 = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+      visible.appendChild(svgEl("polygon", {
+        points: [
+          `${p2.x},${p2.y}`,
+          `${p2.x - ARROW_SIZE * Math.cos(angle2 - Math.PI / 6)},${p2.y - ARROW_SIZE * Math.sin(angle2 - Math.PI / 6)}`,
+          `${p2.x - ARROW_SIZE * Math.cos(angle2 + Math.PI / 6)},${p2.y - ARROW_SIZE * Math.sin(angle2 + Math.PI / 6)}`,
+        ].join(" "),
+        fill: stroke,
+      }));
+    }
+    if (type === Genogram.RelationType.WORKING_BOTH) {
+      // p1側にも矢印（双方向）
+      const angle1 = Math.atan2(p1.y - p2.y, p1.x - p2.x);
+      visible.appendChild(svgEl("polygon", {
+        points: [
+          `${p1.x},${p1.y}`,
+          `${p1.x - ARROW_SIZE * Math.cos(angle1 - Math.PI / 6)},${p1.y - ARROW_SIZE * Math.sin(angle1 - Math.PI / 6)}`,
+          `${p1.x - ARROW_SIZE * Math.cos(angle1 + Math.PI / 6)},${p1.y - ARROW_SIZE * Math.sin(angle1 + Math.PI / 6)}`,
+        ].join(" "),
+        fill: stroke,
+      }));
     }
 
     // クリック・右クリック判定用の太い透明な線（見た目には影響しない）
@@ -786,9 +797,12 @@
   }
 
   function addRelationshipLine(relationship) {
-    const p1 = getNodeCenter(relationship.personAId);
+    let p1 = getNodeCenter(relationship.personAId);
     let p2 = getNodeCenter(relationship.personBId);
     if (!p1 || !p2) return null;
+    if (relationship.type === Genogram.RelationType.WORKING_BOTH) {
+      p1 = arrowAdjustedEndpoint(relationship.personAId, p1, p2, relationship.type);
+    }
     p2 = arrowAdjustedEndpoint(relationship.personBId, p2, p1, relationship.type);
 
     const group = svgEl("g", { class: "relationship-line", "data-id": relationship.id });
@@ -806,8 +820,11 @@
     const c1 = getNodeCenter(link.fromId);
     const c2 = getNodeCenter(link.toId);
     if (!c1 || !c2) return null;
-    const p1 = resolveLineEndpoint(link.fromId, c1, c2);
+    let p1 = resolveLineEndpoint(link.fromId, c1, c2);
     const p2 = arrowAdjustedEndpoint(link.toId, resolveLineEndpoint(link.toId, c2, c1), p1, link.type);
+    if (link.type === Genogram.RelationType.WORKING_BOTH) {
+      p1 = arrowAdjustedEndpoint(link.fromId, p1, p2, link.type);
+    }
 
     const group = svgEl("g", { class: "institution-link-line", "data-id": link.id });
     const hitArea = drawRelationLine(group, p1, p2, link.type, link.maritalStatus);
@@ -827,8 +844,11 @@
           const c1 = getNodeCenter(entry.aId);
           const c2 = getNodeCenter(entry.bId);
           if (c1 && c2) {
-            const p1 = resolveLineEndpoint(entry.aId, c1, c2);
+            let p1 = resolveLineEndpoint(entry.aId, c1, c2);
             const p2 = arrowAdjustedEndpoint(entry.bId, resolveLineEndpoint(entry.bId, c2, c1), p1, entry.link.type);
+            if (entry.link.type === Genogram.RelationType.WORKING_BOTH) {
+              p1 = arrowAdjustedEndpoint(entry.aId, p1, p2, entry.link.type);
+            }
             const hitArea = drawRelationLine(entry.group, p1, p2, entry.link.type, entry.link.maritalStatus);
             attachContextMenu(hitArea, entry.link);
           }
@@ -916,8 +936,11 @@
     if (!entry) return;
     const c1 = getNodeCenter(entry.aId);
     const c2 = getNodeCenter(entry.bId);
-    const p1 = resolveLineEndpoint(entry.aId, c1, c2);
+    let p1 = resolveLineEndpoint(entry.aId, c1, c2);
     const p2 = arrowAdjustedEndpoint(entry.bId, resolveLineEndpoint(entry.bId, c2, c1), p1, entry.link.type);
+    if (entry.link.type === Genogram.RelationType.WORKING_BOTH) {
+      p1 = arrowAdjustedEndpoint(entry.aId, p1, p2, entry.link.type);
+    }
     const hitArea = drawRelationLine(entry.group, p1, p2, entry.link.type, entry.link.maritalStatus);
     attachContextMenu(hitArea, entry.link);
   }

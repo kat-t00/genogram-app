@@ -134,8 +134,9 @@
             <option value="normal">普通の関係</option>
             <option value="strong">強い関係</option>
             <option value="weak">弱い関係</option>
-            <option value="conflict">対立関係</option>
-            <option value="working">働きかけ（矢印）</option>
+            <option value="conflict">ストレスのある関係</option>
+            <option value="working">働きかけ（→ 片方向）</option>
+            <option value="working_both">働きかけ（←→ 双方向）</option>
             <option value="spouse">配偶者関係</option>
             <option value="parent_child">親子関係</option>
           </select>
@@ -209,11 +210,12 @@
         </label>
         <label>関係の種類
           <select id="institution-connect-type">
-            <option value="working">働きかけ（矢印）</option>
+            <option value="working">働きかけ（→ 片方向）</option>
+            <option value="working_both">働きかけ（←→ 双方向）</option>
             <option value="normal">普通の関係</option>
             <option value="strong">強い関係</option>
             <option value="weak">弱い関係</option>
-            <option value="conflict">対立関係</option>
+            <option value="conflict">ストレスのある関係</option>
           </select>
         </label>
         <button type="submit" class="primary-button secondary">🔗 つなぐ</button>
@@ -367,13 +369,14 @@
           <option value="normal">普通の関係</option>
           <option value="strong">強い関係</option>
           <option value="weak">弱い関係</option>
-          <option value="conflict">対立関係</option>
-          <option value="working">働きかけ（矢印）</option>
+          <option value="conflict">ストレスのある関係</option>
+          <option value="working">働きかけ（→ 片方向）</option>
+          <option value="working_both">働きかけ（←→ 双方向）</option>
           <option value="spouse">配偶者関係</option>
           <option value="parent_child">親子関係</option>
         </select>
       </label>
-      <p class="hint-text">「働きかけ」を選ぶと、この人物→つなぐ相手の方向に矢印が表示されます。</p>
+      <p class="hint-text">「片方向」はこの人物→相手への矢印、「双方向」は両端に矢印が付きます。</p>
       <button type="button" id="person-popup-link-button" class="primary-button secondary">🔗 この関係でつなぐ</button>
     </div>
 
@@ -431,14 +434,15 @@
       </label>
       <label>関係の種類
         <select id="institution-popup-link-type">
-          <option value="working">働きかけ（矢印）</option>
+          <option value="working">働きかけ（→ 片方向）</option>
+          <option value="working_both">働きかけ（←→ 双方向）</option>
           <option value="normal">普通の関係</option>
           <option value="strong">強い関係</option>
           <option value="weak">弱い関係</option>
-          <option value="conflict">対立関係</option>
+          <option value="conflict">ストレスのある関係</option>
         </select>
       </label>
-      <p class="hint-text">「働きかけ」を選ぶと、この機関→つなぐ相手の方向に矢印が表示されます。</p>
+      <p class="hint-text">「片方向」はこの機関→相手への矢印、「双方向」は両端に矢印が付きます。</p>
       <button type="button" id="institution-popup-link-button" class="primary-button secondary">🔗 この関係でつなぐ</button>
     </div>
   </section>
@@ -461,11 +465,11 @@
     <label>年齢（わかれば）
       <input type="text" id="new-case-age" placeholder="例：78">
     </label>
-    <label>性別
+    <label>性別<span class="field-hint">（図形の形に反映されます：男性＝□ 女性＝○ 不明＝◇）</span>
       <select id="new-case-gender">
-        <option value="unknown">不明</option>
-        <option value="male">男性</option>
-        <option value="female">女性</option>
+        <option value="male">男性（□）</option>
+        <option value="female">女性（○）</option>
+        <option value="unknown">不明（◇）</option>
       </select>
     </label>
     <label>メモ（任意・一覧で見分けやすくなります）
@@ -502,10 +506,11 @@
       <li><strong>四角</strong>＝男性、<strong>丸</strong>＝女性、<strong>ひし形</strong>＝性別不明・その他</li>
       <li><strong>二重線の図形</strong>＝本人（基準者）</li>
       <li><strong>実線１本</strong>＝結婚・親子関係などの普通のつながり</li>
-      <li><strong>実線２本（並行）</strong>＝強い・親密な関係</li>
+      <li><strong>太い実線</strong>＝強い・親密な関係</li>
       <li><strong>破線</strong>＝弱い・距離のある関係</li>
-      <li><strong>ギザギザ線</strong>＝対立・緊張関係</li>
-      <li><strong>矢印付きの線</strong>＝一方向的な働きかけ（エコマップでよく使われる表現）</li>
+      <li><strong>刻み線（｜｜｜｜）</strong>＝ストレスのある関係</li>
+      <li><strong>片方向の矢印（→）</strong>＝一方的な働きかけ・支援</li>
+      <li><strong>双方向の矢印（←→）</strong>＝互いに働きかけ・支援し合う関係</li>
       <li><strong>点線で囲まれた範囲</strong>＝同居している家族、またはグループ化した範囲</li>
       <li><strong>結婚線に斜線1本</strong>＝別居、<strong>斜線2本</strong>＝離婚</li>
       <li><strong>図形に×印</strong>＝故人（死亡）</li>
@@ -671,8 +676,9 @@
   <button data-type="normal">普通の関係</button>
   <button data-type="strong">強い関係</button>
   <button data-type="weak">弱い関係</button>
-  <button data-type="conflict">対立関係</button>
-  <button data-type="working">働きかけ（矢印）</button>
+  <button data-type="conflict">ストレスのある関係</button>
+  <button data-type="working">働きかけ（→ 片方向）</button>
+  <button data-type="working_both">働きかけ（←→ 双方向）</button>
   <button data-type="spouse">配偶者関係</button>
   <button data-type="parent_child">親子関係</button>
   <button id="line-context-reverse" data-action="reverse">↔ 向きを反転</button>

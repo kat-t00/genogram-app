@@ -18,6 +18,7 @@ Genogram.RelationType = {
   WEAK: "weak",
   CONFLICT: "conflict",
   WORKING: "working",
+  WORKING_BOTH: "working_both",
 };
 
 Genogram.createPerson = function (overrides) {
