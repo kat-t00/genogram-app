@@ -32,6 +32,10 @@ Genogram.createPerson = function (overrides) {
       // 続柄を「誰を基準にするか」。null=本人を基準（従来通り）。
       // 例：子の配偶者を表すには、anchorPersonIdに対象の子のIDを入れてrelationToSubjectを"配偶者"にする
       anchorPersonId: null,
+      // 続柄が「子」系の時だけ使う。基準にする人（anchorPersonId）に配偶者が複数いる
+      // （離婚・再婚など）場合、どちらの配偶者との間の子かを明示するためのID。
+      // null＝基準にする人の配偶者が1人以下（従来通り自動判定）
+      secondParentId: null,
       isCohabiting: false,
       isDeceased: false,
       isKeyPerson: false, // キーパーソン（主たる介護者・連絡先）。1ドキュメントにつき基本1人を想定

@@ -9,6 +9,8 @@
   function normalizeDocument(doc) {
     doc.persons.forEach((p) => {
       if (p.anchorPersonId === undefined) p.anchorPersonId = null;
+      // secondParentIdが無い古いデータは配偶者が複数いても自動判定に任せる（従来通り）
+      if (p.secondParentId === undefined) p.secondParentId = null;
     });
     return doc;
   }

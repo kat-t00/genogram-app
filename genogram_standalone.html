@@ -821,6 +821,8 @@ body.note-panel-collapsed .note-panel {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .context-menu.hidden {
@@ -1180,6 +1182,9 @@ body.note-panel-collapsed .note-panel {
             </ul>
           </div>
         </label>
+        <label id="family-second-parent-wrap" class="hidden">もう一方の親<span class="field-hint">（再婚などで複数の配偶者がいる場合、どちらとの子か選択）</span>
+          <select id="family-second-parent"></select>
+        </label>
         <label class="checkbox-label">
           <input type="checkbox" id="family-cohabiting"> 同居している
         </label>
@@ -1421,6 +1426,9 @@ body.note-panel-collapsed .note-panel {
           </ul>
         </div>
       </label>
+      <label id="person-popup-second-parent-wrap" class="hidden">もう一方の親<span class="field-hint">（再婚などで複数の配偶者がいる場合、どちらとの子か選択）</span>
+        <select id="person-popup-second-parent"></select>
+      </label>
       <label class="checkbox-label">
         <input type="checkbox" id="person-popup-cohabiting"> 同居している
       </label>
@@ -1504,6 +1512,7 @@ body.note-panel-collapsed .note-panel {
       </label>
       <div class="form-actions">
         <button type="button" id="institution-popup-save" class="primary-button secondary">💾 保存</button>
+        <button type="button" id="institution-popup-duplicate" class="secondary-button">📋 同じ構成で複製</button>
         <button type="button" id="institution-popup-delete" class="danger-button">🗑 削除</button>
         <button type="button" id="institution-popup-close" class="secondary-button">✕ 閉じる</button>
       </div>
@@ -1643,13 +1652,14 @@ body.note-panel-collapsed .note-panel {
       <li>「同居している」にチェックを入れると、その家族は自動で点線の枠で囲まれます</li>
       <li>点線の枠（同居枠＝グレーの丸／グループ枠＝オレンジの丸）の縁には小さな丸が並んでいます。これをつまんで縦・横・斜めどの方向にもドラッグでき、その部分だけ枠を凹ませたり広げたりできます（無関係な人の図形を避けたい時に便利です）。ダブルクリックするとその点だけ自動の形に戻ります。枠が重なって丸がつかみにくい時は、つかみたい方の丸を一度クリックすると手前に出てきます</li>
       <li>「子の配偶者」「孫」など本人以外を基準にした関係を追加したい時は、続柄欄の上にある「基準にする人」を本人から該当の家族に変更してから続柄を入力します（詳しくは「❓ジェノグラム・エコマップとは？」参照）</li>
+      <li>離婚・再婚などで「基準にする人」に配偶者が2人以上いる場合、続柄を「子」にすると「もう一方の親」という欄が出てきます。どちらの配偶者との間の子かを選ぶと、正しい夫婦の下に子がつながって表示されます</li>
     </ol>
 
     <h3>③ 図の中の人物・関係機関をその場で編集する</h3>
     <ol class="help-list">
       <li>図の中の人物や関係機関の図形を1回クリックすると、その場に編集できる小さな画面（ポップアップ）が出ます</li>
       <li>名前・年齢・続柄などを直して「💾 保存」を押せば反映されます。「🗑 削除」でその人・機関ごと消せます</li>
-      <li>人物のポップアップには「📋 同じ構成で複製」もあります。性別・続柄・基準にする人・同居の有無などをそのまま引き継いだ人物が「（名前）（2）」という名前ですぐ横に追加されます（似た人物を続けて追加する時に便利です。名前は後から書き換えてください）</li>
+      <li>人物・関係機関どちらのポップアップにも「📋 同じ構成で複製」があります。性別・続柄・基準にする人・同居の有無（人物）や分類・備考（関係機関）などをそのまま引き継いだものが「（名前）（2）」という名前ですぐ横に追加されます（似たものを続けて追加する時に便利です。名前は後から書き換えてください）</li>
       <li>ポップアップを閉じるには、右上の「✕」を押すか、ポップアップの外側をクリックします</li>
       <li>左側の「登録済みの家族／関係機関（クリックで編集）」一覧から名前をクリックしても、同じように編集できます</li>
     </ol>
@@ -1807,6 +1817,10 @@ Genogram.createPerson = function (overrides) {
       // 続柄を「誰を基準にするか」。null=本人を基準（従来通り）。
       // 例：子の配偶者を表すには、anchorPersonIdに対象の子のIDを入れてrelationToSubjectを"配偶者"にする
       anchorPersonId: null,
+      // 続柄が「子」系の時だけ使う。基準にする人（anchorPersonId）に配偶者が複数いる
+      // （離婚・再婚など）場合、どちらの配偶者との間の子かを明示するためのID。
+      // null＝基準にする人の配偶者が1人以下（従来通り自動判定）
+      secondParentId: null,
       isCohabiting: false,
       isDeceased: false,
       isKeyPerson: false, // キーパーソン（主たる介護者・連絡先）。1ドキュメントにつき基本1人を想定
@@ -2180,21 +2194,42 @@ Genogram.createDocument = function (overrides) {
     const insertionIndexOf = new Map();
     document.persons.forEach((p, i) => insertionIndexOf.set(p.id, i));
 
+    // 配偶者が複数いる（離婚後の再婚など）場合、全員を基準人物の片側に一列に
+    // 並べると、後から追加した配偶者との結婚線が前の配偶者の上を通ってしまい、
+    // どちらの配偶者との子か視覚的に分かりにくくなる。1人目は今まで通り右隣、
+    // 2人目は左隣、3人目はさらに右…と基準人物を挟んで交互に配置することで、
+    // それぞれの結婚線が他の配偶者と重ならないようにする。
+    // （基準人物自身・配偶者以外の続柄は0＝基準位置のまま、従来通り）
+    const spouseRankCache = new Map();
+    function spouseSideRank(person) {
+      if (relationClass(person.relationToSubject) !== "spouse") return 0;
+      if (spouseRankCache.has(person.id)) return spouseRankCache.get(person.id);
+      const anchorId = resolveAnchorId(document, person);
+      const siblings = document.persons
+        .filter((p) => relationClass(p.relationToSubject) === "spouse" && resolveAnchorId(document, p) === anchorId)
+        .sort((a, b) => insertionIndexOf.get(a.id) - insertionIndexOf.get(b.id));
+      siblings.forEach((sibling, k) => {
+        const side = k % 2 === 0 ? 1 : -1;
+        const magnitude = Math.floor(k / 2) + 1;
+        spouseRankCache.set(sibling.id, side * magnitude);
+      });
+      return spouseRankCache.get(person.id);
+    }
+
     const groupsByKey = new Map(); // key: `${generation}::${rowClusterId}`
     const allGenerations = new Set();
     document.persons.forEach((person) => {
       if (person.manuallyMoved) return; // 手動でドラッグした人物は自動レイアウトの対象から外す
       const generation = computeGeneration(document, person, genCache, new Set());
-      const isSpouse = relationClass(person.relationToSubject) === "spouse";
       const sortBasis = sortBasisFor(person);
       const branchKey = computeBranchKey(document, sortBasis, keyCache, childIndexCache, new Set());
       const order = localOrder(sortBasis.relationToSubject);
       const insertionIndex = insertionIndexOf.get(sortBasis.id);
-      const spouseFlag = isSpouse ? 1 : 0;
+      const spouseRank = spouseSideRank(person);
       const rowClusterId = ufFind(person.id);
       const key = `${generation}::${rowClusterId}`;
       if (!groupsByKey.has(key)) groupsByKey.set(key, { generation, rows: [] });
-      groupsByKey.get(key).rows.push({ person, order, insertionIndex, branchKey, spouseFlag });
+      groupsByKey.get(key).rows.push({ person, order, insertionIndex, branchKey, spouseRank });
       allGenerations.add(generation);
     });
 
@@ -2253,7 +2288,7 @@ Genogram.createDocument = function (overrides) {
         .slice()
         .sort(
           (a, b) =>
-            compareBranchKey(a.branchKey, b.branchKey) || a.order - b.order || a.insertionIndex - b.insertionIndex || a.spouseFlag - b.spouseFlag
+            compareBranchKey(a.branchKey, b.branchKey) || a.order - b.order || a.insertionIndex - b.insertionIndex || a.spouseRank - b.spouseRank
         );
       const total = slotWidthsFor(sortedRows, node.generation).reduce((sum, w) => sum + w, 0);
       const width = Math.max(total, ROW_X_SPACING);
@@ -2292,7 +2327,7 @@ Genogram.createDocument = function (overrides) {
         const rows = group.rows;
         rows.sort(
           (a, b) =>
-            compareBranchKey(a.branchKey, b.branchKey) || a.order - b.order || a.insertionIndex - b.insertionIndex || a.spouseFlag - b.spouseFlag
+            compareBranchKey(a.branchKey, b.branchKey) || a.order - b.order || a.insertionIndex - b.insertionIndex || a.spouseRank - b.spouseRank
         );
         const centerX = referenceXFor(generation, rows);
         // 一律の間隔ではなく、各人物の外側にぶら下がる枝の幅に応じて自分の「専有幅」を
@@ -2373,7 +2408,15 @@ Genogram.createDocument = function (overrides) {
     document.persons.forEach((person) => {
       if (relationClass(person.relationToSubject) !== "child") return;
       const anchorId = resolveAnchorId(document, person);
-      candidates.push({ childId: person.id, parentIds: new Set([anchorId, ...spousesOfPerson(document, anchorId)]) });
+      const spouseIds = spousesOfPerson(document, anchorId);
+      // 基準人物に配偶者が複数いる（離婚・再婚など）場合、secondParentIdで
+      // どちらの配偶者との子かを指定していれば、その2人だけの単位にする。
+      // 指定が無い（従来データ・配偶者1人以下）場合は今まで通り全配偶者をまとめる。
+      const parentIds =
+        person.secondParentId && spouseIds.includes(person.secondParentId)
+          ? new Set([anchorId, person.secondParentId])
+          : new Set([anchorId, ...spouseIds]);
+      candidates.push({ childId: person.id, parentIds });
     });
 
     const parentAnchorIds = new Set(
@@ -2401,11 +2444,28 @@ Genogram.createDocument = function (overrides) {
       const rj = find(j);
       if (ri !== rj) parentIndex[ri] = rj;
     }
+    function parentSetsEqual(a, b) {
+      if (a.size !== b.size) return false;
+      for (const id of a) if (!b.has(id)) return false;
+      return true;
+    }
+
     const firstSeenAt = new Map(); // parentId -> candidatesのindex
     candidates.forEach((entry, i) => {
       entry.parentIds.forEach((pid) => {
-        if (firstSeenAt.has(pid)) union(i, firstSeenAt.get(pid));
-        else firstSeenAt.set(pid, i);
+        if (firstSeenAt.has(pid)) {
+          const j = firstSeenAt.get(pid);
+          const other = candidates[j];
+          // 両方とも親が2人以上（配偶者まで特定済み）の完全な単位なのに、親の組み合わせ
+          // 自体は一致しない場合（再婚などで、同じ人を介して別の夫婦ペアになっている場合）は
+          // このID経由での統合をスキップする。例：長男を共通の親に持つ「長男+元妻」と
+          // 「長男+再婚相手」は、長男というID共有だけでは1つの家族にまとめない
+          const bothFullySpecified = entry.parentIds.size >= 2 && other.parentIds.size >= 2;
+          if (bothFullySpecified && !parentSetsEqual(entry.parentIds, other.parentIds)) return;
+          union(i, j);
+        } else {
+          firstSeenAt.set(pid, i);
+        }
       });
     });
 
@@ -2553,10 +2613,14 @@ Genogram.createDocument = function (overrides) {
   }
 
   // 基準人物として参照していた人物が削除された場合に呼ぶ。基準人物を本人に戻す
-  // （でないと、存在しないIDを基準にしたまま「どの世代にも正しく配置できない」状態になる）
+  // （でないと、存在しないIDを基準にしたまま「どの世代にも正しく配置できない」状態になる）。
+  // 「もう一方の親」として参照していた場合も同様に消して、存在しないIDが残らないようにする
+  // （消さなくてもcomputeFamilyUnitsのspouseIds.includes()チェックで無視されるだけで実害は
+  // 無いが、データを綺麗に保つため）。
   function clearAnchorReferences(document, deletedPersonId) {
     document.persons.forEach((p) => {
       if (p.anchorPersonId === deletedPersonId) p.anchorPersonId = null;
+      if (p.secondParentId === deletedPersonId) p.secondParentId = null;
     });
   }
 
@@ -2571,6 +2635,8 @@ Genogram.createDocument = function (overrides) {
     resetManualPositions,
     resolveAnchorId,
     clearAnchorReferences,
+    relationClass,
+    spousesOfPerson,
   };
 })(window.Genogram);
 
@@ -3249,6 +3315,41 @@ Genogram.createDocument = function (overrides) {
     return points;
   }
 
+  // 図形の中心から見て、指定した向き(dx,dy)に伸ばした直線が図形の輪郭にぶつかるまでの
+  // 距離を返す。四角(男性)・ひし形(不明)は斜め方向だと角が中心から遠くなり、
+  // 円(女性)を基準にした固定の引き戻し量では収まりきらず矢印が図形の中に埋もれてしまう
+  // ため、実際の図形の形に合わせて距離を計算する。本人は二重線の分だけ一回り大きい。
+  function nodeShapeHalfExtents(nodeId) {
+    if (currentDocument) {
+      const person = currentDocument.persons.find((p) => p.id === nodeId);
+      if (person) {
+        const isSubject = person.id === currentDocument.subjectId;
+        const half = NODE_SIZE / 2 + (isSubject ? 6 : 0);
+        return { shape: person.gender, halfW: half, halfH: half };
+      }
+      const institution = currentDocument.institutions.find((i) => i.id === nodeId);
+      if (institution) {
+        return { shape: "rect", halfW: INSTITUTION_W / 2, halfH: INSTITUTION_H / 2 };
+      }
+    }
+    return null;
+  }
+
+  function shapeEdgeDistance(nodeId, dx, dy) {
+    const extents = nodeShapeHalfExtents(nodeId);
+    if (!extents) return NODE_SIZE / 2; // 人物・関係機関以外（フォールバック）
+    const length = Math.hypot(dx, dy) || 1;
+    const ux = Math.abs(dx / length) || 1e-6;
+    const uy = Math.abs(dy / length) || 1e-6;
+    if (extents.shape === Genogram.Gender.FEMALE) return extents.halfW; // 円は向きによらず一定
+    if (extents.shape === Genogram.Gender.MALE || extents.shape === "rect") {
+      // 四角・長方形：軸に沿った境界までの距離のうち、先に当たる方
+      return Math.min(extents.halfW / ux, extents.halfH / uy);
+    }
+    // 不明＝ひし形：|x|/halfW + |y|/halfH = 1 の輪郭までの距離
+    return 1 / (ux / extents.halfW + uy / extents.halfH);
+  }
+
   // 「働きかけ」関係(矢印)の矢印先端が、人物・関係機関の図形そのものの内側に
   // 隠れて見えなくなってしまうのを防ぐため、矢印が向かう側の終点を図形の手前で止める。
   // すでに枠線(グループ・同居の枠)の縁に合わせてある点(groupHulls管理下)は、
@@ -3259,7 +3360,7 @@ Genogram.createDocument = function (overrides) {
     const dx = point.x - fromPoint.x;
     const dy = point.y - fromPoint.y;
     const length = Math.hypot(dx, dy) || 1;
-    const pullback = NODE_SIZE / 2 + 4;
+    const pullback = shapeEdgeDistance(nodeId, dx, dy) + 4;
     const ratio = Math.max(0, (length - pullback) / length);
     return { x: fromPoint.x + dx * ratio, y: fromPoint.y + dy * ratio };
   }
@@ -4118,6 +4219,30 @@ Genogram.createDocument = function (overrides) {
     fillSelectWithEntities(select, anchorOptionsFor(doc, excludePersonId), currentAnchorId || "");
   }
 
+  // 「もう一方の親」フィールドの表示・選択肢を更新する。続柄が「子」系で、
+  // かつ基準にする人に配偶者が2人以上いる（離婚・再婚など）時だけ表示する。
+  // それ以外（配偶者0〜1人）は今まで通り自動判定できるので隠す。
+  function refreshSecondParentField(wrapId, selectId, doc, rawAnchorId, relationValue, currentValue) {
+    const wrap = document.getElementById(wrapId);
+    const select = document.getElementById(selectId);
+    const anchorId = rawAnchorId || doc.subjectId;
+    const isChild = Genogram.relationRules.relationClass(relationValue) === "child";
+    const spouseIds = isChild ? Genogram.relationRules.spousesOfPerson(doc, anchorId) : [];
+    if (!isChild || spouseIds.length < 2) {
+      wrap.classList.add("hidden");
+      select.innerHTML = "";
+      return;
+    }
+    const options = [{ id: "", label: "（選択してください）" }].concat(
+      spouseIds.map((id) => {
+        const spouse = doc.persons.find((p) => p.id === id);
+        return { id, label: spouse ? spouse.name : "？" };
+      })
+    );
+    fillSelectWithEntities(select, options, currentValue || "");
+    wrap.classList.remove("hidden");
+  }
+
   function fillSelectWithEntities(select, options, previousValue) {
     select.innerHTML = "";
     options.forEach((opt) => {
@@ -4143,11 +4268,16 @@ Genogram.createDocument = function (overrides) {
   }
 
   function fillFamilyForm(person) {
+    const doc = Genogram.app.getDocument();
     document.getElementById("family-name").value = person.name;
     document.getElementById("family-age").value = person.age || "";
     document.getElementById("family-gender").value = mapGenderCodeToLabel(person.gender);
     document.getElementById("family-relation").value = person.relationToSubject;
-    refreshAnchorSelect("family-anchor", Genogram.app.getDocument(), person.id, person.anchorPersonId);
+    refreshAnchorSelect("family-anchor", doc, person.id, person.anchorPersonId);
+    refreshSecondParentField(
+      "family-second-parent-wrap", "family-second-parent", doc,
+      person.anchorPersonId, person.relationToSubject, person.secondParentId
+    );
     document.getElementById("family-cohabiting").checked = person.isCohabiting;
     document.getElementById("family-deceased").checked = person.isDeceased;
     document.getElementById("family-key-person").checked = person.isKeyPerson;
@@ -4192,7 +4322,9 @@ Genogram.createDocument = function (overrides) {
     document.getElementById("family-submit-button").textContent = "＋ 家族を追加";
     document.getElementById("family-cancel-edit").classList.add("hidden");
     document.getElementById("family-delete-button").classList.add("hidden");
-    renderFamilyList(Genogram.app.getDocument());
+    const doc = Genogram.app.getDocument();
+    refreshSecondParentField("family-second-parent-wrap", "family-second-parent", doc, null, "子", null);
+    renderFamilyList(doc);
   }
 
   function deleteCurrentPerson() {
@@ -4226,6 +4358,12 @@ Genogram.createDocument = function (overrides) {
       const gender = mapGenderLabelToCode(document.getElementById("family-gender").value.trim());
       const relationToSubject = document.getElementById("family-relation").value.trim();
       const anchorPersonId = document.getElementById("family-anchor").value || null;
+      const secondParentWrapVisible = !document
+        .getElementById("family-second-parent-wrap")
+        .classList.contains("hidden");
+      const secondParentId = secondParentWrapVisible
+        ? document.getElementById("family-second-parent").value || null
+        : null;
       const isCohabiting = document.getElementById("family-cohabiting").checked;
       const isDeceased = document.getElementById("family-deceased").checked;
       const isKeyPerson = document.getElementById("family-key-person").checked;
@@ -4238,13 +4376,16 @@ Genogram.createDocument = function (overrides) {
         // 変更で手動でドラッグした位置（他の人物・関係機関も含む）が消えてしまわないようにする
         const relationChanged =
           person.id !== doc.subjectId &&
-          (person.relationToSubject !== relationToSubject || (person.anchorPersonId || "") !== (anchorPersonId || ""));
+          (person.relationToSubject !== relationToSubject ||
+            (person.anchorPersonId || "") !== (anchorPersonId || "") ||
+            (person.secondParentId || "") !== (secondParentId || ""));
         person.name = name;
         person.age = age;
         person.gender = gender;
         if (person.id !== doc.subjectId) {
           person.relationToSubject = relationToSubject;
           person.anchorPersonId = anchorPersonId;
+          person.secondParentId = secondParentId;
         }
         person.isCohabiting = isCohabiting;
         person.isDeceased = isDeceased;
@@ -4269,6 +4410,7 @@ Genogram.createDocument = function (overrides) {
           gender,
           relationToSubject,
           anchorPersonId,
+          secondParentId,
           isCohabiting,
           isDeceased,
           isKeyPerson,
@@ -4284,6 +4426,7 @@ Genogram.createDocument = function (overrides) {
 
         form.reset();
         document.getElementById("family-relation").value = "子";
+        refreshSecondParentField("family-second-parent-wrap", "family-second-parent", doc, null, "子", null);
         Genogram.app.refreshAll();
         // 新しく追加した人物が今の表示範囲の外にあると、追加されたことに気づきにくいため、
         // その場合だけ自動で全体表示に切り替える（既にちゃんと見えていれば視点は動かさない）
@@ -4298,6 +4441,19 @@ Genogram.createDocument = function (overrides) {
 
     document.getElementById("family-cancel-edit").addEventListener("click", cancelFamilyEdit);
     document.getElementById("family-delete-button").addEventListener("click", deleteCurrentPerson);
+
+    // 基準にする人・続柄が変わるたびに「もう一方の親」欄の要否を再判定する
+    function syncSecondParentField() {
+      const doc = Genogram.app.getDocument();
+      refreshSecondParentField(
+        "family-second-parent-wrap", "family-second-parent", doc,
+        document.getElementById("family-anchor").value || null,
+        document.getElementById("family-relation").value,
+        document.getElementById("family-second-parent").value
+      );
+    }
+    document.getElementById("family-anchor").addEventListener("change", syncSecondParentField);
+    document.getElementById("family-relation").addEventListener("input", syncSecondParentField);
   }
 
   function renderFamilyList(doc) {
@@ -4656,19 +4812,26 @@ Genogram.createDocument = function (overrides) {
   let popupPersonId = null;
   let popupInstitutionId = null;
 
-  function positionPopup(popup, clientX, clientY) {
-    popup.style.left = "0px";
-    popup.style.top = "0px";
-    popup.classList.remove("hidden");
+  // クリック座標を基準に要素を配置しつつ、画面外にはみ出さないようクランプする。
+  // ポップアップ・関係線メニュー・背景クイックメニューなど、クリック位置に出す
+  // フローティング要素すべてで共通して使う（CSS側にmax-height+overflow-yを
+  // 設定した上で、位置自体も必ず画面内に収まるようにする二段構え）。
+  function positionAtViewportPoint(el, clientX, clientY, offset = 0) {
+    el.style.left = "0px";
+    el.style.top = "0px";
+    el.classList.remove("hidden");
     const margin = 10;
+    const rect = el.getBoundingClientRect();
+    const left = Math.min(Math.max(margin, clientX + offset), window.innerWidth - rect.width - margin);
+    const top = Math.min(Math.max(margin, clientY + offset), window.innerHeight - rect.height - margin);
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+  }
+
+  function positionPopup(popup, clientX, clientY) {
     // タップした図形そのものがポップアップの真下に隠れてしまうと、同じ図形を
     // もう一度タップして閉じる操作（トグル）ができなくなるため、少し右下にずらす
-    const shapeClearOffset = 24;
-    const rect = popup.getBoundingClientRect();
-    const left = Math.min(Math.max(margin, clientX + shapeClearOffset), window.innerWidth - rect.width - margin);
-    const top = Math.min(Math.max(margin, clientY + shapeClearOffset), window.innerHeight - rect.height - margin);
-    popup.style.left = `${left}px`;
-    popup.style.top = `${top}px`;
+    positionAtViewportPoint(popup, clientX, clientY, 24);
   }
 
   function closePersonPopup() {
@@ -4728,6 +4891,10 @@ Genogram.createDocument = function (overrides) {
     document.getElementById("person-popup-relation").disabled = isSubject;
     refreshAnchorSelect("person-popup-anchor", doc, person.id, person.anchorPersonId);
     document.getElementById("person-popup-anchor").disabled = isSubject;
+    refreshSecondParentField(
+      "person-popup-second-parent-wrap", "person-popup-second-parent", doc,
+      person.anchorPersonId, person.relationToSubject, person.secondParentId
+    );
     document.getElementById("person-popup-cohabiting").checked = person.isCohabiting;
     document.getElementById("person-popup-deceased").checked = person.isDeceased;
     document.getElementById("person-popup-key-person").checked = person.isKeyPerson;
@@ -4753,10 +4920,19 @@ Genogram.createDocument = function (overrides) {
     if (person.id !== doc.subjectId) {
       const newRelation = document.getElementById("person-popup-relation").value.trim();
       const newAnchorId = document.getElementById("person-popup-anchor").value || null;
+      const secondParentWrapVisible = !document
+        .getElementById("person-popup-second-parent-wrap")
+        .classList.contains("hidden");
+      const newSecondParentId = secondParentWrapVisible
+        ? document.getElementById("person-popup-second-parent").value || null
+        : null;
       relationChanged =
-        person.relationToSubject !== newRelation || (person.anchorPersonId || "") !== (newAnchorId || "");
+        person.relationToSubject !== newRelation ||
+        (person.anchorPersonId || "") !== (newAnchorId || "") ||
+        (person.secondParentId || "") !== (newSecondParentId || "");
       person.relationToSubject = newRelation;
       person.anchorPersonId = newAnchorId;
+      person.secondParentId = newSecondParentId;
     }
     person.isCohabiting = document.getElementById("person-popup-cohabiting").checked;
     person.isDeceased = document.getElementById("person-popup-deceased").checked;
@@ -4793,13 +4969,13 @@ Genogram.createDocument = function (overrides) {
     Genogram.app.refreshAll();
   }
 
-  // 名前の末尾に「（2）」「（3）」…をつけて、複製した人物を見分けやすくする。
+  // 名前の末尾に「（2）」「（3）」…をつけて、複製した人物・関係機関を見分けやすくする。
   // すでに「（2）」付きの名前を複製した場合は元の名前から付け直し、次の空いている番号にする
   // （例：「孫テスト（2）」を複製→「孫テスト（3）」。「孫テスト（2）（3）」のようにはしない）。
-  function nextDuplicateName(doc, originalName) {
+  function nextDuplicateName(existingNames, originalName) {
     const baseName = originalName.replace(/（\d+）$/, "");
     let n = 2;
-    while (doc.persons.some((p) => p.name === `${baseName}（${n}）`)) {
+    while (existingNames.includes(`${baseName}（${n}）`)) {
       n += 1;
     }
     return `${baseName}（${n}）`;
@@ -4815,11 +4991,12 @@ Genogram.createDocument = function (overrides) {
 
     const newPerson = Genogram.createPerson({
       id: makeId("p"),
-      name: nextDuplicateName(doc, person.name),
+      name: nextDuplicateName(doc.persons.map((p) => p.name), person.name),
       age: person.age,
       gender: person.gender,
       relationToSubject: person.relationToSubject,
       anchorPersonId: person.anchorPersonId,
+      secondParentId: person.secondParentId,
       isCohabiting: person.isCohabiting,
       isDeceased: person.isDeceased,
       note: person.note,
@@ -4873,6 +5050,32 @@ Genogram.createDocument = function (overrides) {
     Genogram.app.refreshAll();
   }
 
+  // 「同じ構成で複製」：分類・備考をそのまま引き継いだ関係機関をすぐ横に1人追加する。
+  // 同じような機関（デイサービスをもう1件など）を1から入力し直す手間を減らすため。
+  // 人物ポップアップの複製ボタンと同じ考え方（forms.jsのduplicatePersonFromPopup）。
+  function duplicateInstitutionFromPopup() {
+    const doc = Genogram.app.getDocument();
+    const institution = doc.institutions.find((i) => i.id === popupInstitutionId);
+    if (!institution) return;
+
+    const newInstitution = Genogram.createInstitution({
+      id: makeId("i"),
+      name: nextDuplicateName(doc.institutions.map((i) => i.name), institution.name),
+      category: institution.category,
+      note: institution.note,
+      x: institution.x,
+      y: institution.y,
+    });
+    doc.institutions.push(newInstitution);
+    Genogram.relationRules.recomputeInstitutionLayout(doc);
+
+    closeInstitutionPopup();
+    Genogram.app.refreshAll();
+    if (!Genogram.canvas.isWorldPointVisible(newInstitution.x, newInstitution.y, 60)) {
+      Genogram.canvas.fitToView(doc);
+    }
+  }
+
   function deleteInstitutionPopup() {
     if (!popupInstitutionId) return;
     if (!window.confirm("この関係機関を削除しますか？")) return;
@@ -4899,7 +5102,21 @@ Genogram.createDocument = function (overrides) {
       linkFromPopup(popupPersonId, targetId, type);
     });
 
+    // 基準にする人・続柄が変わるたびに「もう一方の親」欄の要否を再判定する
+    function syncPopupSecondParentField() {
+      const doc = Genogram.app.getDocument();
+      refreshSecondParentField(
+        "person-popup-second-parent-wrap", "person-popup-second-parent", doc,
+        document.getElementById("person-popup-anchor").value || null,
+        document.getElementById("person-popup-relation").value,
+        document.getElementById("person-popup-second-parent").value
+      );
+    }
+    document.getElementById("person-popup-anchor").addEventListener("change", syncPopupSecondParentField);
+    document.getElementById("person-popup-relation").addEventListener("input", syncPopupSecondParentField);
+
     document.getElementById("institution-popup-save").addEventListener("click", saveInstitutionPopup);
+    document.getElementById("institution-popup-duplicate").addEventListener("click", duplicateInstitutionFromPopup);
     document.getElementById("institution-popup-delete").addEventListener("click", deleteInstitutionPopup);
     document.getElementById("institution-popup-close").addEventListener("click", closeInstitutionPopup);
     document.getElementById("institution-popup-close-x").addEventListener("click", closeInstitutionPopup);
@@ -4963,6 +5180,7 @@ Genogram.createDocument = function (overrides) {
     focusAddForm,
     openPersonPopup,
     openInstitutionPopup,
+    positionAtViewportPoint,
     makeId,
   };
 })(window.Genogram);
@@ -4980,6 +5198,8 @@ Genogram.createDocument = function (overrides) {
   function normalizeDocument(doc) {
     doc.persons.forEach((p) => {
       if (p.anchorPersonId === undefined) p.anchorPersonId = null;
+      // secondParentIdが無い古いデータは配偶者が複数いても自動判定に任せる（従来通り）
+      if (p.secondParentId === undefined) p.secondParentId = null;
     });
     return doc;
   }
@@ -5911,9 +6131,7 @@ Genogram.createDocument = function (overrides) {
         menu.classList.add("hidden");
         return;
       }
-      menu.style.left = `${clientX}px`;
-      menu.style.top = `${clientY}px`;
-      menu.classList.remove("hidden");
+      Genogram.forms.positionAtViewportPoint(menu, clientX, clientY);
     });
 
     menu.querySelectorAll("button").forEach((button) => {
@@ -5966,9 +6184,7 @@ Genogram.createDocument = function (overrides) {
       document
         .getElementById("line-context-marital")
         .classList.toggle("hidden", linkRef.__familyStem || linkRef.type !== "spouse");
-      menu.style.left = `${clientX}px`;
-      menu.style.top = `${clientY}px`;
-      menu.classList.remove("hidden");
+      Genogram.forms.positionAtViewportPoint(menu, clientX, clientY);
     });
 
     menu.querySelectorAll("button").forEach((button) => {

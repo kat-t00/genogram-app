@@ -100,6 +100,9 @@
             </ul>
           </div>
         </label>
+        <label id="family-second-parent-wrap" class="hidden">もう一方の親<span class="field-hint">（再婚などで複数の配偶者がいる場合、どちらとの子か選択）</span>
+          <select id="family-second-parent"></select>
+        </label>
         <label class="checkbox-label">
           <input type="checkbox" id="family-cohabiting"> 同居している
         </label>
@@ -341,6 +344,9 @@
           </ul>
         </div>
       </label>
+      <label id="person-popup-second-parent-wrap" class="hidden">もう一方の親<span class="field-hint">（再婚などで複数の配偶者がいる場合、どちらとの子か選択）</span>
+        <select id="person-popup-second-parent"></select>
+      </label>
       <label class="checkbox-label">
         <input type="checkbox" id="person-popup-cohabiting"> 同居している
       </label>
@@ -424,6 +430,7 @@
       </label>
       <div class="form-actions">
         <button type="button" id="institution-popup-save" class="primary-button secondary">💾 保存</button>
+        <button type="button" id="institution-popup-duplicate" class="secondary-button">📋 同じ構成で複製</button>
         <button type="button" id="institution-popup-delete" class="danger-button">🗑 削除</button>
         <button type="button" id="institution-popup-close" class="secondary-button">✕ 閉じる</button>
       </div>
@@ -563,13 +570,14 @@
       <li>「同居している」にチェックを入れると、その家族は自動で点線の枠で囲まれます</li>
       <li>点線の枠（同居枠＝グレーの丸／グループ枠＝オレンジの丸）の縁には小さな丸が並んでいます。これをつまんで縦・横・斜めどの方向にもドラッグでき、その部分だけ枠を凹ませたり広げたりできます（無関係な人の図形を避けたい時に便利です）。ダブルクリックするとその点だけ自動の形に戻ります。枠が重なって丸がつかみにくい時は、つかみたい方の丸を一度クリックすると手前に出てきます</li>
       <li>「子の配偶者」「孫」など本人以外を基準にした関係を追加したい時は、続柄欄の上にある「基準にする人」を本人から該当の家族に変更してから続柄を入力します（詳しくは「❓ジェノグラム・エコマップとは？」参照）</li>
+      <li>離婚・再婚などで「基準にする人」に配偶者が2人以上いる場合、続柄を「子」にすると「もう一方の親」という欄が出てきます。どちらの配偶者との間の子かを選ぶと、正しい夫婦の下に子がつながって表示されます</li>
     </ol>
 
     <h3>③ 図の中の人物・関係機関をその場で編集する</h3>
     <ol class="help-list">
       <li>図の中の人物や関係機関の図形を1回クリックすると、その場に編集できる小さな画面（ポップアップ）が出ます</li>
       <li>名前・年齢・続柄などを直して「💾 保存」を押せば反映されます。「🗑 削除」でその人・機関ごと消せます</li>
-      <li>人物のポップアップには「📋 同じ構成で複製」もあります。性別・続柄・基準にする人・同居の有無などをそのまま引き継いだ人物が「（名前）（2）」という名前ですぐ横に追加されます（似た人物を続けて追加する時に便利です。名前は後から書き換えてください）</li>
+      <li>人物・関係機関どちらのポップアップにも「📋 同じ構成で複製」があります。性別・続柄・基準にする人・同居の有無（人物）や分類・備考（関係機関）などをそのまま引き継いだものが「（名前）（2）」という名前ですぐ横に追加されます（似たものを続けて追加する時に便利です。名前は後から書き換えてください）</li>
       <li>ポップアップを閉じるには、右上の「✕」を押すか、ポップアップの外側をクリックします</li>
       <li>左側の「登録済みの家族／関係機関（クリックで編集）」一覧から名前をクリックしても、同じように編集できます</li>
     </ol>

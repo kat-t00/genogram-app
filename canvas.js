@@ -671,6 +671,41 @@
     return points;
   }
 
+  // 図形の中心から見て、指定した向き(dx,dy)に伸ばした直線が図形の輪郭にぶつかるまでの
+  // 距離を返す。四角(男性)・ひし形(不明)は斜め方向だと角が中心から遠くなり、
+  // 円(女性)を基準にした固定の引き戻し量では収まりきらず矢印が図形の中に埋もれてしまう
+  // ため、実際の図形の形に合わせて距離を計算する。本人は二重線の分だけ一回り大きい。
+  function nodeShapeHalfExtents(nodeId) {
+    if (currentDocument) {
+      const person = currentDocument.persons.find((p) => p.id === nodeId);
+      if (person) {
+        const isSubject = person.id === currentDocument.subjectId;
+        const half = NODE_SIZE / 2 + (isSubject ? 6 : 0);
+        return { shape: person.gender, halfW: half, halfH: half };
+      }
+      const institution = currentDocument.institutions.find((i) => i.id === nodeId);
+      if (institution) {
+        return { shape: "rect", halfW: INSTITUTION_W / 2, halfH: INSTITUTION_H / 2 };
+      }
+    }
+    return null;
+  }
+
+  function shapeEdgeDistance(nodeId, dx, dy) {
+    const extents = nodeShapeHalfExtents(nodeId);
+    if (!extents) return NODE_SIZE / 2; // 人物・関係機関以外（フォールバック）
+    const length = Math.hypot(dx, dy) || 1;
+    const ux = Math.abs(dx / length) || 1e-6;
+    const uy = Math.abs(dy / length) || 1e-6;
+    if (extents.shape === Genogram.Gender.FEMALE) return extents.halfW; // 円は向きによらず一定
+    if (extents.shape === Genogram.Gender.MALE || extents.shape === "rect") {
+      // 四角・長方形：軸に沿った境界までの距離のうち、先に当たる方
+      return Math.min(extents.halfW / ux, extents.halfH / uy);
+    }
+    // 不明＝ひし形：|x|/halfW + |y|/halfH = 1 の輪郭までの距離
+    return 1 / (ux / extents.halfW + uy / extents.halfH);
+  }
+
   // 「働きかけ」関係(矢印)の矢印先端が、人物・関係機関の図形そのものの内側に
   // 隠れて見えなくなってしまうのを防ぐため、矢印が向かう側の終点を図形の手前で止める。
   // すでに枠線(グループ・同居の枠)の縁に合わせてある点(groupHulls管理下)は、
@@ -681,7 +716,7 @@
     const dx = point.x - fromPoint.x;
     const dy = point.y - fromPoint.y;
     const length = Math.hypot(dx, dy) || 1;
-    const pullback = NODE_SIZE / 2 + 4;
+    const pullback = shapeEdgeDistance(nodeId, dx, dy) + 4;
     const ratio = Math.max(0, (length - pullback) / length);
     return { x: fromPoint.x + dx * ratio, y: fromPoint.y + dy * ratio };
   }

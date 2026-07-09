@@ -209,21 +209,42 @@
     const insertionIndexOf = new Map();
     document.persons.forEach((p, i) => insertionIndexOf.set(p.id, i));
 
+    // 配偶者が複数いる（離婚後の再婚など）場合、全員を基準人物の片側に一列に
+    // 並べると、後から追加した配偶者との結婚線が前の配偶者の上を通ってしまい、
+    // どちらの配偶者との子か視覚的に分かりにくくなる。1人目は今まで通り右隣、
+    // 2人目は左隣、3人目はさらに右…と基準人物を挟んで交互に配置することで、
+    // それぞれの結婚線が他の配偶者と重ならないようにする。
+    // （基準人物自身・配偶者以外の続柄は0＝基準位置のまま、従来通り）
+    const spouseRankCache = new Map();
+    function spouseSideRank(person) {
+      if (relationClass(person.relationToSubject) !== "spouse") return 0;
+      if (spouseRankCache.has(person.id)) return spouseRankCache.get(person.id);
+      const anchorId = resolveAnchorId(document, person);
+      const siblings = document.persons
+        .filter((p) => relationClass(p.relationToSubject) === "spouse" && resolveAnchorId(document, p) === anchorId)
+        .sort((a, b) => insertionIndexOf.get(a.id) - insertionIndexOf.get(b.id));
+      siblings.forEach((sibling, k) => {
+        const side = k % 2 === 0 ? 1 : -1;
+        const magnitude = Math.floor(k / 2) + 1;
+        spouseRankCache.set(sibling.id, side * magnitude);
+      });
+      return spouseRankCache.get(person.id);
+    }
+
     const groupsByKey = new Map(); // key: `${generation}::${rowClusterId}`
     const allGenerations = new Set();
     document.persons.forEach((person) => {
       if (person.manuallyMoved) return; // 手動でドラッグした人物は自動レイアウトの対象から外す
       const generation = computeGeneration(document, person, genCache, new Set());
-      const isSpouse = relationClass(person.relationToSubject) === "spouse";
       const sortBasis = sortBasisFor(person);
       const branchKey = computeBranchKey(document, sortBasis, keyCache, childIndexCache, new Set());
       const order = localOrder(sortBasis.relationToSubject);
       const insertionIndex = insertionIndexOf.get(sortBasis.id);
-      const spouseFlag = isSpouse ? 1 : 0;
+      const spouseRank = spouseSideRank(person);
       const rowClusterId = ufFind(person.id);
       const key = `${generation}::${rowClusterId}`;
       if (!groupsByKey.has(key)) groupsByKey.set(key, { generation, rows: [] });
-      groupsByKey.get(key).rows.push({ person, order, insertionIndex, branchKey, spouseFlag });
+      groupsByKey.get(key).rows.push({ person, order, insertionIndex, branchKey, spouseRank });
       allGenerations.add(generation);
     });
 
@@ -282,7 +303,7 @@
         .slice()
         .sort(
           (a, b) =>
-            compareBranchKey(a.branchKey, b.branchKey) || a.order - b.order || a.insertionIndex - b.insertionIndex || a.spouseFlag - b.spouseFlag
+            compareBranchKey(a.branchKey, b.branchKey) || a.order - b.order || a.insertionIndex - b.insertionIndex || a.spouseRank - b.spouseRank
         );
       const total = slotWidthsFor(sortedRows, node.generation).reduce((sum, w) => sum + w, 0);
       const width = Math.max(total, ROW_X_SPACING);
@@ -321,7 +342,7 @@
         const rows = group.rows;
         rows.sort(
           (a, b) =>
-            compareBranchKey(a.branchKey, b.branchKey) || a.order - b.order || a.insertionIndex - b.insertionIndex || a.spouseFlag - b.spouseFlag
+            compareBranchKey(a.branchKey, b.branchKey) || a.order - b.order || a.insertionIndex - b.insertionIndex || a.spouseRank - b.spouseRank
         );
         const centerX = referenceXFor(generation, rows);
         // 一律の間隔ではなく、各人物の外側にぶら下がる枝の幅に応じて自分の「専有幅」を
@@ -402,7 +423,15 @@
     document.persons.forEach((person) => {
       if (relationClass(person.relationToSubject) !== "child") return;
       const anchorId = resolveAnchorId(document, person);
-      candidates.push({ childId: person.id, parentIds: new Set([anchorId, ...spousesOfPerson(document, anchorId)]) });
+      const spouseIds = spousesOfPerson(document, anchorId);
+      // 基準人物に配偶者が複数いる（離婚・再婚など）場合、secondParentIdで
+      // どちらの配偶者との子かを指定していれば、その2人だけの単位にする。
+      // 指定が無い（従来データ・配偶者1人以下）場合は今まで通り全配偶者をまとめる。
+      const parentIds =
+        person.secondParentId && spouseIds.includes(person.secondParentId)
+          ? new Set([anchorId, person.secondParentId])
+          : new Set([anchorId, ...spouseIds]);
+      candidates.push({ childId: person.id, parentIds });
     });
 
     const parentAnchorIds = new Set(
@@ -430,11 +459,28 @@
       const rj = find(j);
       if (ri !== rj) parentIndex[ri] = rj;
     }
+    function parentSetsEqual(a, b) {
+      if (a.size !== b.size) return false;
+      for (const id of a) if (!b.has(id)) return false;
+      return true;
+    }
+
     const firstSeenAt = new Map(); // parentId -> candidatesのindex
     candidates.forEach((entry, i) => {
       entry.parentIds.forEach((pid) => {
-        if (firstSeenAt.has(pid)) union(i, firstSeenAt.get(pid));
-        else firstSeenAt.set(pid, i);
+        if (firstSeenAt.has(pid)) {
+          const j = firstSeenAt.get(pid);
+          const other = candidates[j];
+          // 両方とも親が2人以上（配偶者まで特定済み）の完全な単位なのに、親の組み合わせ
+          // 自体は一致しない場合（再婚などで、同じ人を介して別の夫婦ペアになっている場合）は
+          // このID経由での統合をスキップする。例：長男を共通の親に持つ「長男+元妻」と
+          // 「長男+再婚相手」は、長男というID共有だけでは1つの家族にまとめない
+          const bothFullySpecified = entry.parentIds.size >= 2 && other.parentIds.size >= 2;
+          if (bothFullySpecified && !parentSetsEqual(entry.parentIds, other.parentIds)) return;
+          union(i, j);
+        } else {
+          firstSeenAt.set(pid, i);
+        }
       });
     });
 
@@ -582,10 +628,14 @@
   }
 
   // 基準人物として参照していた人物が削除された場合に呼ぶ。基準人物を本人に戻す
-  // （でないと、存在しないIDを基準にしたまま「どの世代にも正しく配置できない」状態になる）
+  // （でないと、存在しないIDを基準にしたまま「どの世代にも正しく配置できない」状態になる）。
+  // 「もう一方の親」として参照していた場合も同様に消して、存在しないIDが残らないようにする
+  // （消さなくてもcomputeFamilyUnitsのspouseIds.includes()チェックで無視されるだけで実害は
+  // 無いが、データを綺麗に保つため）。
   function clearAnchorReferences(document, deletedPersonId) {
     document.persons.forEach((p) => {
       if (p.anchorPersonId === deletedPersonId) p.anchorPersonId = null;
+      if (p.secondParentId === deletedPersonId) p.secondParentId = null;
     });
   }
 
@@ -600,5 +650,7 @@
     resetManualPositions,
     resolveAnchorId,
     clearAnchorReferences,
+    relationClass,
+    spousesOfPerson,
   };
 })(window.Genogram);

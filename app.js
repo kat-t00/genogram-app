@@ -525,9 +525,7 @@
         menu.classList.add("hidden");
         return;
       }
-      menu.style.left = `${clientX}px`;
-      menu.style.top = `${clientY}px`;
-      menu.classList.remove("hidden");
+      Genogram.forms.positionAtViewportPoint(menu, clientX, clientY);
     });
 
     menu.querySelectorAll("button").forEach((button) => {
@@ -580,9 +578,7 @@
       document
         .getElementById("line-context-marital")
         .classList.toggle("hidden", linkRef.__familyStem || linkRef.type !== "spouse");
-      menu.style.left = `${clientX}px`;
-      menu.style.top = `${clientY}px`;
-      menu.classList.remove("hidden");
+      Genogram.forms.positionAtViewportPoint(menu, clientX, clientY);
     });
 
     menu.querySelectorAll("button").forEach((button) => {
