@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """index.html・style.css・各.jsファイルを1つのHTMLファイルにまとめて
-genogram_standalone.htmlを作る。配布用（コピーして渡す）はこのファイルを使う。
+genogram_standalone.html（配布用）とgenogram_事務所用.html（事務所配布用の
+同内容コピー）を作る。
 
 開発（Claude Codeでの編集）は引き続きindex.html等の個別ファイルで行い、
-変更したら最後にこのスクリプトを実行してgenogram_standalone.htmlを作り直す。
+変更したら最後にこのスクリプトを実行して両方を作り直す。
 
 実行方法: python3 build_standalone.py
 """
@@ -12,7 +13,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
 INDEX_HTML = BASE_DIR / "index.html"
-OUTPUT_HTML = BASE_DIR / "genogram_standalone.html"
+OUTPUT_HTMLS = [BASE_DIR / "genogram_standalone.html", BASE_DIR / "genogram_事務所用.html"]
 
 JS_FILES = [
     "models.js",
@@ -48,8 +49,9 @@ def main():
     if "<link rel=\"stylesheet\"" in html:
         raise RuntimeError("style.cssへのlinkタグが置換されずに残っています。")
 
-    OUTPUT_HTML.write_text(html, encoding="utf-8")
-    print(f"作成しました: {OUTPUT_HTML}")
+    for output_html in OUTPUT_HTMLS:
+        output_html.write_text(html, encoding="utf-8")
+        print(f"作成しました: {output_html}")
 
 
 if __name__ == "__main__":
