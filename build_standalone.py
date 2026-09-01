@@ -13,7 +13,11 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
 INDEX_HTML = BASE_DIR / "index.html"
-OUTPUT_HTMLS = [BASE_DIR / "genogram_standalone.html", BASE_DIR / "genogram_事務所用.html"]
+STANDALONE_HTML = BASE_DIR / "genogram_standalone.html"
+OFFICE_HTML = BASE_DIR / "genogram_事務所用.html"
+
+# 事務所配布用にはオーナー個人のSNS動線（ヘッダーの「作成：ケアマネカトゥ」リンク）を含めない
+APP_CREDIT_PATTERN = re.compile(r'\s*<a class="app-credit".*?</a>\n', re.DOTALL)
 
 JS_FILES = [
     "models.js",
@@ -49,8 +53,12 @@ def main():
     if "<link rel=\"stylesheet\"" in html:
         raise RuntimeError("style.cssへのlinkタグが置換されずに残っています。")
 
-    for output_html in OUTPUT_HTMLS:
-        output_html.write_text(html, encoding="utf-8")
+    office_html = APP_CREDIT_PATTERN.sub("", html, count=1)
+    if office_html == html:
+        raise RuntimeError("app-creditリンクが見つからず、事務所用から除去できませんでした。index.htmlの構造を確認してください。")
+
+    for output_html, content in [(STANDALONE_HTML, html), (OFFICE_HTML, office_html)]:
+        output_html.write_text(content, encoding="utf-8")
         print(f"作成しました: {output_html}")
 
 
