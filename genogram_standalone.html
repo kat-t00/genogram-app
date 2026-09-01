@@ -219,6 +219,27 @@ body.note-panel-collapsed .note-panel {
   padding-left: 6px;
 }
 
+/* 文字サイズコントロールはズームと混同されやすいため、
+   キーパーソン表示等と同系のオレンジ系アクセントで見た目からも区別する */
+.font-size-control {
+  background: rgba(255, 226, 183, 0.95);
+}
+
+.font-size-control .control-label {
+  font-weight: bold;
+  color: #b5701f;
+}
+
+/* －／＋ボタン自体の文字を小さいＡ・大きいＡにして、
+   「文字が小さくなる／大きくなる」ことを一目で伝える */
+.font-size-btn-small {
+  font-size: 11px;
+}
+
+.font-size-btn-large {
+  font-size: 19px;
+}
+
 .zoom-btn,
 .zoom-percent {
   border: none;
@@ -1356,15 +1377,16 @@ body.note-panel-collapsed .note-panel {
 
     <div class="bottom-right-controls">
       <div class="zoom-control" title="表示全体の拡大縮小">
+        <span class="control-label">🔍</span>
         <button type="button" id="btn-zoom-out" class="zoom-btn" title="縮小します">－</button>
         <button type="button" id="btn-zoom-reset" class="zoom-percent" title="標準サイズ（100%）に戻します">100%</button>
         <button type="button" id="btn-zoom-in" class="zoom-btn" title="拡大します">＋</button>
       </div>
-      <div class="zoom-control" title="図形内の文字サイズ">
-        <span class="control-label">🔤</span>
-        <button type="button" id="btn-font-size-out" class="zoom-btn" title="文字を小さくします">－</button>
+      <div class="zoom-control font-size-control" title="名前・続柄などの文字サイズ">
+        <span class="control-label">文字</span>
+        <button type="button" id="btn-font-size-out" class="zoom-btn font-size-btn-small" title="文字を小さくします">Ａ</button>
         <button type="button" id="btn-font-size-reset" class="zoom-percent" title="文字サイズを標準（100%）に戻します">100%</button>
-        <button type="button" id="btn-font-size-in" class="zoom-btn" title="文字を大きくします">＋</button>
+        <button type="button" id="btn-font-size-in" class="zoom-btn font-size-btn-large" title="文字を大きくします">Ａ</button>
       </div>
     </div>
     <div class="canvas-overlay-toolbars">
@@ -2703,7 +2725,7 @@ Genogram.createDocument = function (overrides) {
   // 図形内テキスト（名前・続柄など）の文字サイズ倍率。ユーザーがボタンで調整できる。
   let fontScale = 1;
   const MIN_FONT_SCALE = 0.7;
-  const MAX_FONT_SCALE = 1.6;
+  const MAX_FONT_SCALE = 2;
   let onFontScaleChange = null;
   // font-size属性に渡す値をfontScale倍して返す（元のpx値はそのままの見た目基準）
   function scaledFontSize(basePx) {

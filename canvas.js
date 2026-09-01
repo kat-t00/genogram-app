@@ -38,7 +38,7 @@
   // 図形内テキスト（名前・続柄など）の文字サイズ倍率。ユーザーがボタンで調整できる。
   let fontScale = 1;
   const MIN_FONT_SCALE = 0.7;
-  const MAX_FONT_SCALE = 1.6;
+  const MAX_FONT_SCALE = 2;
   let onFontScaleChange = null;
   // font-size属性に渡す値をfontScale倍して返す（元のpx値はそのままの見た目基準）
   function scaledFontSize(basePx) {

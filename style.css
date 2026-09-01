@@ -212,6 +212,27 @@ body.note-panel-collapsed .note-panel {
   padding-left: 6px;
 }
 
+/* 文字サイズコントロールはズームと混同されやすいため、
+   キーパーソン表示等と同系のオレンジ系アクセントで見た目からも区別する */
+.font-size-control {
+  background: rgba(255, 226, 183, 0.95);
+}
+
+.font-size-control .control-label {
+  font-weight: bold;
+  color: #b5701f;
+}
+
+/* －／＋ボタン自体の文字を小さいＡ・大きいＡにして、
+   「文字が小さくなる／大きくなる」ことを一目で伝える */
+.font-size-btn-small {
+  font-size: 11px;
+}
+
+.font-size-btn-large {
+  font-size: 19px;
+}
+
 .zoom-btn,
 .zoom-percent {
   border: none;
