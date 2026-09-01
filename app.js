@@ -251,6 +251,31 @@
     });
   }
 
+  // 図形内の文字サイズ（名前・続柄など）を±10%刻みで調整する。
+  // ズームコントロールと同じ操作感（－／100%表示／＋）にして分かりやすくした。
+  // 選んだ倍率はlocalStorageに保存し、次回開いた時も引き継ぐ。
+  const FONT_SCALE_KEY = "genogram_font_scale";
+
+  function setupFontSizeControl() {
+    const label = document.getElementById("btn-font-size-reset");
+    const savedScale = parseFloat(localStorage.getItem(FONT_SCALE_KEY));
+    Genogram.canvas.setFontScaleChangeHandler((percent) => {
+      label.textContent = `${percent}%`;
+      localStorage.setItem(FONT_SCALE_KEY, String(Genogram.canvas.getFontScale()));
+    });
+    if (savedScale) Genogram.canvas.setFontScale(savedScale);
+
+    document.getElementById("btn-font-size-in").addEventListener("click", () => {
+      Genogram.canvas.setFontScale(Genogram.canvas.getFontScale() + 0.1);
+    });
+    document.getElementById("btn-font-size-out").addEventListener("click", () => {
+      Genogram.canvas.setFontScale(Genogram.canvas.getFontScale() - 0.1);
+    });
+    label.addEventListener("click", () => {
+      Genogram.canvas.setFontScale(1);
+    });
+  }
+
   function defaultFileBaseName() {
     const subject = currentDocument.persons.find((p) => p.id === currentDocument.subjectId);
     return subject ? subject.name : "genogram";
@@ -314,6 +339,7 @@
 
     setupPanelToggles();
     setupZoomControl();
+    setupFontSizeControl();
 
     document.getElementById("btn-add-person").addEventListener("click", () => {
       ensureSidePanelOpen();

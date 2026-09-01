@@ -260,10 +260,18 @@
       </button>
     </div>
 
-    <div class="zoom-control">
-      <button type="button" id="btn-zoom-out" class="zoom-btn" title="縮小します">－</button>
-      <button type="button" id="btn-zoom-reset" class="zoom-percent" title="標準サイズ（100%）に戻します">100%</button>
-      <button type="button" id="btn-zoom-in" class="zoom-btn" title="拡大します">＋</button>
+    <div class="bottom-right-controls">
+      <div class="zoom-control" title="表示全体の拡大縮小">
+        <button type="button" id="btn-zoom-out" class="zoom-btn" title="縮小します">－</button>
+        <button type="button" id="btn-zoom-reset" class="zoom-percent" title="標準サイズ（100%）に戻します">100%</button>
+        <button type="button" id="btn-zoom-in" class="zoom-btn" title="拡大します">＋</button>
+      </div>
+      <div class="zoom-control" title="図形内の文字サイズ">
+        <span class="control-label">🔤</span>
+        <button type="button" id="btn-font-size-out" class="zoom-btn" title="文字を小さくします">－</button>
+        <button type="button" id="btn-font-size-reset" class="zoom-percent" title="文字サイズを標準（100%）に戻します">100%</button>
+        <button type="button" id="btn-font-size-in" class="zoom-btn" title="文字を大きくします">＋</button>
+      </div>
     </div>
     <div class="canvas-overlay-toolbars">
       <div class="canvas-toolbar">
@@ -610,6 +618,7 @@
       <li>「🔍 全体表示」を押すと、図の全体が画面に収まるように調整されます</li>
       <li>マウスの操作：図の何もない部分をドラッグすると画面を動かせます、ホイール（スクロール）で拡大・縮小できます</li>
       <li>図の右下に今の拡大率（％）が表示されます。「－」「＋」で段階的に拡大縮小、「100%」の表示をクリックすると標準サイズに戻ります</li>
+      <li>その下の「🔤」は名前・続柄などの文字だけを大きく・小さくできます（図の拡大縮小とは別の調整です）</li>
       <li>操作を間違えたら「↩️ 元に戻す」（Ctrl/Cmd+Z）、戻しすぎたら「↪️ やり直す」で直せます</li>
       <li>画面が狭いパソコンでは、左側の入力フォームや下の備考欄が図の表示スペースを圧迫することがあります。図の左下にある「☰ フォーム」「📝 備考」ボタンを押すと、それぞれ折りたためて図を大きく表示できます（もう一度押すと元に戻ります）</li>
     </ol>

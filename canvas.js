@@ -35,6 +35,16 @@
   const MIN_SCALE = 0.2;
   const MAX_SCALE = 3;
 
+  // 図形内テキスト（名前・続柄など）の文字サイズ倍率。ユーザーがボタンで調整できる。
+  let fontScale = 1;
+  const MIN_FONT_SCALE = 0.7;
+  const MAX_FONT_SCALE = 1.6;
+  let onFontScaleChange = null;
+  // font-size属性に渡す値をfontScale倍して返す（元のpx値はそのままの見た目基準）
+  function scaledFontSize(basePx) {
+    return String(Math.round(basePx * fontScale * 10) / 10);
+  }
+
   let currentDocument = null;
   const personGroups = {}; // personId -> <g>
   const institutionGroups = {}; // institutionId -> <g>
@@ -445,7 +455,7 @@
 
     if (person.age !== null && person.age !== undefined && person.age !== "") {
       const ageText = svgEl("text", {
-        x: 0, y: 5, "text-anchor": "middle", "font-size": "16",
+        x: 0, y: 5, "text-anchor": "middle", "font-size": scaledFontSize(16),
         fill: "#2f3b52", "font-weight": "bold",
       });
       ageText.textContent = person.age;
@@ -469,7 +479,7 @@
       x: 0,
       y: LABEL_OFFSET,
       "text-anchor": "middle",
-      "font-size": "13",
+      "font-size": scaledFontSize(13),
       fill: "#2f3b52",
       "font-weight": "bold",
     });
@@ -482,7 +492,7 @@
         x: 0,
         y: LABEL_OFFSET + 16,
         "text-anchor": "middle",
-        "font-size": "11",
+        "font-size": scaledFontSize(11),
         "font-weight": "bold",
         class: "key-person-label",
         fill: "#c2790a",
@@ -494,7 +504,7 @@
     if (person.note) {
       const noteStartY = LABEL_OFFSET + 16 + (person.isKeyPerson ? 16 : 0);
       const noteText = svgEl("text", {
-        x: 0, y: 0, "text-anchor": "middle", "font-size": "11", fill: "#6b7c93",
+        x: 0, y: 0, "text-anchor": "middle", "font-size": scaledFontSize(11), fill: "#6b7c93",
       });
       const noteLines = wrapTextByLength(person.note, 12);
       noteLines.forEach((line, index) => {
@@ -551,7 +561,7 @@
     // <foreignObject>(HTML埋め込み)はPNG書き出し時にcanvasが「tainted」と
     // 判定されて失敗するため使わず、<text>+<tspan>で折り返し表示する
     const label = svgEl("text", {
-      x: 0, y: 0, "text-anchor": "middle", "font-size": "12",
+      x: 0, y: 0, "text-anchor": "middle", "font-size": scaledFontSize(12),
       "font-weight": "bold", fill: "#2b5b6e",
     });
     const lines = wrapTextByLength(institution.name, 9);
@@ -566,7 +576,7 @@
 
     if (institution.note) {
       const noteLabel = svgEl("text", {
-        x: 0, y: INSTITUTION_H / 2 + 16, "text-anchor": "middle", "font-size": "11", fill: "#6b7c93",
+        x: 0, y: INSTITUTION_H / 2 + 16, "text-anchor": "middle", "font-size": scaledFontSize(11), fill: "#6b7c93",
       });
       const noteLines = wrapTextByLength(institution.note, 14);
       noteLines.forEach((line, index) => {
@@ -1265,7 +1275,7 @@
       x: topPoint.x,
       y: topPoint.y - 10,
       "text-anchor": "middle",
-      "font-size": "13",
+      "font-size": scaledFontSize(13),
       "font-weight": "bold",
       fill: "#b5701f",
     });
@@ -1352,8 +1362,24 @@
     window.addEventListener("pointerup", onUp);
   }
 
+  // 文字サイズ倍率を変更して再描画する（現在の位置・パン・ズームには影響しない）
+  function setFontScale(scale) {
+    fontScale = Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, scale));
+    if (currentDocument) renderDocument(currentDocument);
+    if (onFontScaleChange) onFontScaleChange(Math.round(fontScale * 100));
+  }
+  function getFontScale() {
+    return fontScale;
+  }
+  function setFontScaleChangeHandler(handler) {
+    onFontScaleChange = handler;
+  }
+
   Genogram.canvas = {
     COHABITING_BOUNDARY_ID,
+    setFontScale,
+    getFontScale,
+    setFontScaleChangeHandler,
     init,
     renderDocument,
     addPersonNode,
